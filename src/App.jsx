@@ -34,8 +34,19 @@ export default function App() {
     handleViewportChange()
     mediaQuery.addEventListener?.('change', handleViewportChange)
 
+    const handleScroll = () => {
+      const header = document.querySelector('.nav-header')
+      if (header) {
+        header.classList.toggle('is-scrolled', window.scrollY > 12)
+      }
+    }
+
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+
     return () => {
       mediaQuery.removeEventListener?.('change', handleViewportChange)
+      window.removeEventListener('scroll', handleScroll)
     }
   }, [])
 
