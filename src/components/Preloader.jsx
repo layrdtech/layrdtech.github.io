@@ -16,31 +16,50 @@ export default function Preloader({ onComplete }) {
   ]
 
   useEffect(() => {
-    const start = Date.now()
-    const duration = 2200 // 2.2 seconds loader
+    // Add body class to indicate preloader active (can be used to defer heavy assets)
+    document.body.classList.add('preloader-active')
 
-    const timer = setInterval(() => {
-      const elapsed = Date.now() - start
+    // Pause and hide background video to reduce CPU during preloader
+    const bgVideo = document.querySelector('.bg-video')
+    if (bgVideo) {
+      try { bgVideo.pause() } catch (e) {}
+      bgVideo.style.visibility = 'hidden'
+      bgVideo.style.pointerEvents = 'none'
+    }
+
+    const start = performance.now()
+    const duration = 1200 // shorten loader to 1.2s for snappier UX
+
+    let rafId
+    const step = (now) => {
+      const elapsed = now - start
       const nextProgress = Math.min(100, Math.floor((elapsed / duration) * 100))
-      
       setProgress(nextProgress)
 
-      // Shift logs depending on progress threshold
-      const idealLogIndex = Math.min(
-        logs.length - 1,
-        Math.floor((nextProgress / 100) * logs.length)
-      )
+      const idealLogIndex = Math.min(logs.length - 1, Math.floor((nextProgress / 100) * logs.length))
       setLogIndex(idealLogIndex)
 
-      if (elapsed >= duration) {
-        clearInterval(timer)
-        setTimeout(() => {
-          onComplete()
-        }, 300)
+      if (elapsed < duration) {
+        rafId = requestAnimationFrame(step)
+      } else {
+        // reveal background video after brief fade
+        if (bgVideo) {
+          bgVideo.style.visibility = ''
+          try { bgVideo.play().catch(()=>{}) } catch (e) {}
+          bgVideo.style.pointerEvents = ''
+        }
+        document.body.classList.remove('preloader-active')
+        document.body.classList.add('preloader-complete')
+        setTimeout(() => onComplete(), 200)
       }
-    }, 30)
+    }
 
-    return () => clearInterval(timer)
+    rafId = requestAnimationFrame(step)
+
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId)
+      document.body.classList.remove('preloader-active')
+    }
   }, [onComplete])
 
   return (
