@@ -1,0 +1,1425 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Layrd.Tech - Find Your Inner Engineer</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="./src/index.css" />
+    <style>
+      #matrix-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 3;
+        pointer-events: none;
+        opacity: 1.0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- MATRIX WORDS BACKGROUND FLOW -->
+    <canvas id="matrix-canvas"></canvas>
+
+    <!-- BACKGROUND VIDEO PLAYER -->
+    <video autoplay muted loop playsinline class="bg-video">
+      <source src="./public/background.mp4" type="video/mp4" />
+      <source src="./public/background.webm" type="video/webm" />
+    </video>
+
+    <!-- BACKGROUND FLOATING PARTICLES -->
+    <div class="bg-particle particle-1"></div>
+    <div class="bg-particle particle-2"></div>
+    <div class="bg-particle particle-3"></div>
+
+    <!-- 1. AMBIENT GLOW SPHERES (DEPTH BACKGROUND LAYER) -->
+    <div id="glow-cyan" class="ambient-glow-sphere sphere-cyan" style="top: 10%; right: 5%;"></div>
+    <div id="glow-purple" class="ambient-glow-sphere sphere-purple" style="top: 45%; left: -10%;"></div>
+    <div id="glow-cyan-bottom" class="ambient-glow-sphere sphere-cyan" style="bottom: 5%; right: 10%; width: 250px; height: 250px;"></div>
+
+    <!-- 2. PHYSICAL CURSOR -->
+    <div id="cursor-core" class="custom-cursor-core"></div>
+    <div id="cursor-ring" class="custom-cursor-ring"></div>
+
+    <!-- 3. PRELOADER -->
+    <div id="preloader" class="preloader-container">
+      <div class="preloader-grid"></div>
+      <div class="preloader-content">
+        <div class="preloader-logo-ring"></div>
+        <h1 class="preloader-title">LAYRD.TECH</h1>
+        <div id="preloader-status" class="preloader-status">Initializing engineering sandbox...</div>
+        <div class="progress-bar-wrapper">
+          <div id="preloader-progress" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+        <div id="preloader-percentage" class="progress-percentage">0%</div>
+      </div>
+    </div>
+
+    <!-- 4. APP CONTAINER -->
+    <div class="app-container">
+      <!-- Radial Spotlight Overlay -->
+      <div id="radial-spotlight" class="radial-spotlight"></div>
+      
+      <!-- Grid Overlay -->
+      <div id="ambient-grid" class="bg-ambient-grid"></div>
+
+      <!-- Navigation -->
+      <header class="nav-header">
+        <div class="nav-brand">
+          <div class="brand-icon-box">
+            <img src="./public/logo.png" alt="Layrd Tech Logo" class="brand-logo-img" />
+          </div>
+          <span class="brand-name">LAYRD.TECH</span>
+        </div>
+        <nav class="nav-links">
+          <a href="#guild" class="nav-link">The Guild</a>
+          <a href="#sectors" class="nav-link">Sectors</a>
+          <a href="#workshops" class="nav-link">Workshops</a>
+          <a href="#gallery" class="nav-link">Gallery</a>
+          <a href="#about" class="nav-link">About</a>
+          <a href="#sandbox" class="nav-link">Sandbox</a>
+        </nav>
+        <a href="#contact" class="nav-cta">Join Community</a>
+      </header>
+
+      <!-- Hero Section -->
+      <section class="section-wrapper hero-wrapper">
+        <div class="hero-text-block">
+          <div class="hero-badge">
+            <span class="hero-badge-dot"></span>
+            <span>FROM IDEA TO PRODUCT</span>
+          </div>
+          <h1 class="hero-main-title">
+            <span>Find Your Inner</span><br />
+            <span>Engineer.</span>
+          </h1>
+          <p class="hero-desc">
+            We are a hands-on community built to help students create real things—taking your technical ideas all the way to finished functional products. We merge electronics, microchips, 3D manufacturing, and emerging software tracks to turn curious students into capable makers.
+          </p>
+          <div class="hero-ctas">
+            <a href="#contact" class="btn btn-primary">Join the Guild</a>
+            <a href="#sandbox" class="btn btn-secondary">Enter Sandbox Lab</a>
+          </div>
+        </div>
+
+        <div class="hero-graphic-block">
+          <div class="logo-showcase-container" id="logo-parallax-element">
+            <!-- Rotating concentric technological workbench rings -->
+            <div class="tech-ring ring-outer"></div>
+            <div class="tech-ring ring-inner"></div>
+            
+            <!-- Blueprint telemetry speculative labels -->
+            <div class="tech-spec spec-top-left">SYS_CORE // ACTIVE</div>
+            <div class="tech-spec spec-bottom-right">NODE_LINK // ESTABLISHED</div>
+            
+            <img src="./public/logo.png" alt="Layrd Tech Logo" class="hero-logo-img" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Core Community Philosophy Section -->
+      <section class="section-wrapper reveal-on-scroll" id="guild">
+        <div class="section-header">
+          <span class="section-label">01 // The Pipeline</span>
+          <h2 class="section-title">The Idea-to-Product Journey</h2>
+          <p>
+            Traditional labs print certificates. We make hardware and software creators. Here is how we guide you through the process of building real things.
+          </p>
+        </div>
+
+        <div class="grid-container">
+          <div class="workshop-card glass-panel interactive-card reveal-on-scroll">
+            <span class="card-badge">Phase 01 // The Spark</span>
+            <h3 class="card-title">Concept & System Architecture</h3>
+            <p class="card-desc">Identify real-world challenges, map electrical pathways, formulate algorithms, and outline your physical product layouts.</p>
+          </div>
+
+          <div class="workshop-card glass-panel interactive-card reveal-on-scroll">
+            <span class="card-badge">Phase 02 // The Prototype</span>
+            <h3 class="card-title">Electronics & Physical Builds</h3>
+            <p class="card-desc">Route professional circuit boards in KiCad, write bare-metal code for microchips, and print custom geometries with 3D printers.</p>
+          </div>
+
+          <div class="workshop-card glass-panel interactive-card reveal-on-scroll">
+            <span class="card-badge">Phase 03 // The Product</span>
+            <h3 class="card-title">Deploy & Launch Sprints</h3>
+            <p class="card-desc">Integrate neural APIs, compile firmware packages, run real-time telemetry calibrations, and showcase your functional device to the world.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sectors Timeline -->
+      <section class="section-wrapper reveal-on-scroll" id="sectors">
+        <div class="section-header">
+          <span class="section-label">02 // The Frontier</span>
+          <h2 class="section-title">Emergent Technology Sectors</h2>
+          <p>We map current generation fields into practical community training modules.</p>
+        </div>
+
+        <div class="timeline-container">
+          <div class="timeline-line-center"></div>
+          
+          <div class="timeline-item reveal-on-scroll">
+            <div class="timeline-node-dot"></div>
+            <div class="timeline-content-card glass-panel">
+              <span class="timeline-tag">Sector 01 / Intelligence</span>
+              <h3 class="timeline-card-title">Generative AI Engineering</h3>
+              <p class="timeline-card-desc">Building autonomous prompt systems, local LLM integrations, and vector search embeddings.</p>
+            </div>
+          </div>
+
+          <div class="timeline-item reveal-on-scroll">
+            <div class="timeline-node-dot"></div>
+            <div class="timeline-content-card glass-panel">
+              <span class="timeline-tag">Sector 02 / Hardware</span>
+              <h3 class="timeline-card-title">Edge IoT & Embedded Programming</h3>
+              <p class="timeline-card-desc">Connecting physical sensors to microchips using STM32 registers and PCB designs.</p>
+            </div>
+          </div>
+
+          <div class="timeline-item reveal-on-scroll">
+            <div class="timeline-node-dot"></div>
+            <div class="timeline-content-card glass-panel">
+              <span class="timeline-tag">Sector 03 / Fabrication</span>
+              <h3 class="timeline-card-title">3D Printing & Project Assistance</h3>
+              <p class="timeline-card-desc">Turning student concepts into physical reality with 3D structural slicing, structural CAD layouts, and custom project assistance.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Workshops -->
+      <section class="section-wrapper reveal-on-scroll" id="workshops">
+        <div class="section-header">
+          <span class="section-label">03 // Sprints</span>
+          <h2 class="section-title">Active Workshop Tracks</h2>
+        </div>
+
+        <div class="grid-container">
+          <div class="workshop-card glass-panel interactive-card reveal-on-scroll">
+            <span class="card-badge">Module 01 // All Streams</span>
+            <h3 class="card-title">AI & Machine Learning Applications</h3>
+            <p class="card-desc">Map deep networks and create custom models using Python neural code packages.</p>
+          </div>
+          
+          <div class="workshop-card glass-panel interactive-card reveal-on-scroll">
+            <span class="card-badge">Module 02 // Engineering, CompSci</span>
+            <h3 class="card-title">Arduino & IoT in Smart Systems</h3>
+            <p class="card-desc">Connect sensors, build live relays, and transmit data arrays over Wi-Fi.</p>
+          </div>
+
+          <div class="workshop-card glass-panel interactive-card reveal-on-scroll">
+            <span class="card-badge">Module 03 // Engineering, Electronics</span>
+            <h3 class="card-title">KiCad PCB Design & Electronics</h3>
+            <p class="card-desc">Create technical schematics and draft multilayer printed copper circuit boards.</p>
+          </div>
+
+          <div class="workshop-card glass-panel interactive-card reveal-on-scroll">
+            <span class="card-badge">Module 04 // CompSci, Electronics</span>
+            <h3 class="card-title">STM32 Microcontroller Programming</h3>
+            <p class="card-desc">Program registers, configure interrupts, and write embedded threads directly on chips.</p>
+          </div>
+
+          <div class="workshop-card glass-panel interactive-card reveal-on-scroll">
+            <span class="card-badge">Module 05 // Electrical Engineering</span>
+            <h3 class="card-title">Electrical Circuits & Signal Analysis</h3>
+            <p class="card-desc">Verify circuit nodes, analyze sine waves with virtual oscilloscopes, and master power logic.</p>
+          </div>
+
+          <div class="workshop-card glass-panel interactive-card reveal-on-scroll">
+            <span class="card-badge">Module 06 // Engineering, Medicine</span>
+            <h3 class="card-title">3D Printing & Design Slicing</h3>
+            <p class="card-desc">Draft CAD wireframes, slice geometries, and print functional physical objects.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Guild Gallery Section (Encapsulated B&W Horizontal Scroll Grid) -->
+      <section class="section-wrapper reveal-on-scroll" id="gallery">
+        <div class="section-header">
+          <span class="section-label">04 // Build Sessions</span>
+          <h2 class="section-title">The Guild Gallery</h2>
+          <p>
+            Browse snapshots from our hands-on engineering labs and student product expositions.
+          </p>
+        </div>
+        
+        <div class="encapsulated-gallery-box">
+          <div class="gallery-grid">
+            <div class="gallery-card">
+              <div class="gallery-img-wrapper">
+                <img src="./public/gallery1.jpg" alt="Hands-on Microcontroller Build Session" class="gallery-img" />
+              </div>
+            </div>
+
+            <div class="gallery-card">
+              <div class="gallery-img-wrapper">
+                <img src="./public/gallery2.jpg" alt="Technical Exposition Presentation" class="gallery-img" />
+              </div>
+            </div>
+
+            <div class="gallery-card">
+              <div class="gallery-img-wrapper">
+                <img src="./public/gallery3.jpg" alt="Layrd.Tech Engineering Assembly" class="gallery-img" />
+              </div>
+            </div>
+
+            <div class="gallery-card">
+              <div class="gallery-img-wrapper">
+                <img src="./public/gallery4.jpg" alt="Classroom Lecture and Q&A" class="gallery-img" />
+              </div>
+            </div>
+
+            <div class="gallery-card">
+              <div class="gallery-img-wrapper">
+                <img src="./public/gallery5.jpg" alt="Engineering Lab Presentation" class="gallery-img" />
+              </div>
+            </div>
+
+            <div class="gallery-card">
+              <div class="gallery-img-wrapper">
+                <img src="./public/gallery6.jpg" alt="Technical Discussion session" class="gallery-img" />
+              </div>
+            </div>
+
+            <div class="gallery-card">
+              <div class="gallery-img-wrapper">
+                <img src="./public/gallery7.jpg" alt="Layrd.Tech Core Team and Mentors" class="gallery-img" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Meet the Founder -->
+      <section class="section-wrapper reveal-on-scroll" id="about">
+        <div class="founder-layout-wrapper">
+          <div class="founder-img-card glass-panel reveal-on-scroll">
+            <div class="tech-corner top-left"></div>
+            <div class="tech-corner top-right"></div>
+            <div class="tech-corner bottom-left"></div>
+            <div class="tech-corner bottom-right"></div>
+            <div class="founder-img-frame">
+              <img src="./public/founder.jpg" alt="Founder of Layrd.Tech" class="founder-img" />
+            </div>
+            <div class="founder-quote-box">
+              <p class="founder-creed">"One million dreams, one mission: better engineering."</p>
+            </div>
+          </div>
+          
+          <div class="founder-info-block reveal-on-scroll">
+            <span class="section-label">05 // Visionary</span>
+            <h2 class="section-title">Meet the Founder</h2>
+            <p class="founder-text-body">
+              Every great advancement starts with a single question: How can we make this better? From designing intricate firmware circuits to architecting scalable industrial frameworks, my journey has been defined by a relentless pursuit of engineering excellence.
+            </p>
+            <p class="founder-text-body" style="margin-top: 15px;">
+              This startup is the culmination of that journey—a dedicated vehicle to turn ambitious possibilities into functional, high-performance realities.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Sandbox Panel -->
+      <section class="section-wrapper reveal-on-scroll" id="sandbox">
+        <div class="sandbox-card glass-panel" id="tech-sandbox-container">
+          <div class="sandbox-header">
+            <div class="sandbox-indicator">
+              <span>● Interactive Next-Gen Tech Lab</span>
+            </div>
+            <h3 class="sandbox-title">Layrd Sandbox Labs</h3>
+          </div>
+
+          <div class="sandbox-tabs">
+            <button id="tab-elec" class="sandbox-tab-btn active">Electronics Lab</button>
+            <button id="tab-ai" class="sandbox-tab-btn">AI Networks</button>
+            <button id="tab-iot" class="sandbox-tab-btn">Edge Telemetry</button>
+          </div>
+
+          <div class="sandbox-panel-content">
+            <!-- Electronics Lab Tab -->
+            <div id="panel-elec" class="sandbox-tab-panel">
+              <div class="sandbox-elec-layout">
+                <div>
+                  <h4 class="sandbox-panel-title">Ohm's Law Prototyper</h4>
+                  <p class="sandbox-panel-desc">Adjust the source voltage and resistor load values. Monitor the resulting circuit current to protect the LED from burning out.</p>
+                  
+                  <div class="elec-controls-row">
+                    <div class="elec-slider-group">
+                      <label class="form-label">Voltage: <span id="elec-voltage-val">5.0</span> V</label>
+                      <input type="range" id="elec-voltage" min="1" max="12" step="0.5" value="5" class="elec-range" />
+                    </div>
+                    <div class="elec-slider-group">
+                      <label class="form-label">Resistance: <span id="elec-resistance-val">220</span> Ω</label>
+                      <input type="range" id="elec-resistance" min="50" max="1000" step="10" value="220" class="elec-range" />
+                    </div>
+                  </div>
+
+                  <!-- Dynamic Resistor Color Code display -->
+                  <div style="margin-bottom: 20px;">
+                    <span class="result-label" style="display: block; margin-bottom: 8px;">Resistor Color Bands (4-Band)</span>
+                    <div id="resistor-color-bands-row" style="display: flex; gap: 6px;">
+                      <!-- Populated via Javascript -->
+                    </div>
+                  </div>
+
+                  <div class="elec-results-box">
+                    <div class="elec-result-item">
+                      <span class="result-label">Circuit Current (I)</span>
+                      <span id="elec-current-val" class="result-val font-mono">22.7 mA</span>
+                    </div>
+                    <div class="elec-result-item">
+                      <span class="result-label">LED Status</span>
+                      <span id="elec-status" class="status-indicator online">OPTIMAL CURRENT</span>
+                    </div>
+                  </div>
+
+                  <!-- Live Formula computation card -->
+                  <div style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.12); border-radius: 6px; font-size: 11px; color: var(--text-gray); border: 1px solid rgba(255,255,255,0.02); line-height: 1.5;">
+                    <span class="result-label" style="display: block; margin-bottom: 4px;">Formula & Power Dissipation</span>
+                    <div id="elec-formula-steps">Formula: <strong>I = V / R</strong></div>
+                    <div id="elec-power-steps">Power: <strong>P = V * I</strong></div>
+                    <div id="elec-power-warning" style="margin-top: 4px; color: var(--primary-glow);">Safe under standard 1/4W resistor rating.</div>
+                  </div>
+                </div>
+
+                <div class="elec-schematic-wrapper">
+                  <div class="schematic-board">
+                    <svg class="schematic-circuit-svg" viewBox="0 0 180 140">
+                      <path d="M 26,65 L 26,20 L 96,20 L 165,20 L 165,65 L 165,120 L 96,120 L 26,120 Z" fill="none" stroke="rgba(255, 255, 255, 0.05)" stroke-width="2" />
+                      <path id="circuit-current-flow" d="M 26,65 L 26,20 L 96,20 L 165,20 L 165,65 L 165,120 L 96,120 L 26,120 Z" fill="none" stroke="var(--primary-glow)" stroke-width="1.5" stroke-dasharray="4, 8" />
+                    </svg>
+
+                    <div class="schematic-component voltage-source">
+                      <span class="comp-label">VCC</span>
+                      <span id="sch-volt" class="comp-val">5.0V</span>
+                    </div>
+                    <div class="schematic-component resistor">
+                      <span class="comp-label">RES</span>
+                      <span id="sch-res" class="comp-val">220Ω</span>
+                    </div>
+                    <div class="schematic-component led">
+                      <div id="sch-led-glow" class="led-glow-glow glow-on"></div>
+                      <span class="comp-label">LED</span>
+                    </div>
+                    <div class="schematic-component ground">
+                      <span class="comp-label">GND</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- AI Tab -->
+            <div id="panel-ai" class="sandbox-tab-panel" style="display: none;">
+              <div class="sandbox-ai-layout">
+                <div>
+                  <h4 class="sandbox-panel-title">Decision Boundary Classifier</h4>
+                  <p class="sandbox-panel-desc">Tune and train a single-layer perceptron neural network right in your browser. Watch the weights converge to separate Cyan (inside radius) and Purple coordinate nodes.</p>
+                  <div class="ai-stat-row">
+                    <div class="ai-stat-card">
+                      <div class="stat-label">Loss Parameter</div>
+                      <div id="ai-loss" class="stat-val font-mono">0.8500</div>
+                    </div>
+                    <div class="ai-stat-card">
+                      <div class="stat-label">Model Accuracy</div>
+                      <div id="ai-acc" class="stat-val font-mono">0.0%</div>
+                    </div>
+                    <div class="ai-stat-card">
+                      <div class="stat-label">Epoch Cycles</div>
+                      <div id="ai-epoch" class="stat-val font-mono">0/20</div>
+                    </div>
+                  </div>
+                  <button id="btn-train-ai" class="action-btn primary-btn">Train Neural Net</button>
+                </div>
+
+                <!-- Interactive boundary canvas and terminal logs -->
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <div style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; padding: 10px;">
+                    <canvas id="ai-canvas" width="220" height="220" style="border-radius: 6px; width: 220px; height: 220px;"></canvas>
+                  </div>
+                  <div class="ai-terminal-wrapper">
+                    <div class="terminal-header">
+                      <span class="terminal-title">bash - layrd_ai_engine.sh</span>
+                    </div>
+                    <div id="ai-terminal" class="terminal-body font-mono">
+                      <div class="terminal-line">&gt; System initialized. Ready for neural optimization.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- IoT Tab -->
+            <div id="panel-iot" class="sandbox-tab-panel" style="display: none;">
+              <div class="sandbox-iot-layout">
+                <div>
+                  <h4 class="sandbox-panel-title">Edge Telemetry Hub</h4>
+                  <p class="sandbox-panel-desc">Plot and check real-time telemetry from remote edge microchips. Query the device using AT serial commands.</p>
+                  
+                  <!-- Sensor Selection Buttons -->
+                  <div style="display: flex; gap: 6px; margin-bottom: 15px; flex-wrap: wrap;">
+                    <button id="btn-sensor-temp" class="action-btn primary-btn" style="font-size: 10px; padding: 4px 10px;">DHT11 (Temp)</button>
+                    <button id="btn-sensor-light" class="action-btn" style="font-size: 10px; padding: 4px 10px;">LDR (Photocell)</button>
+                    <button id="btn-sensor-dist" class="action-btn" style="font-size: 10px; padding: 4px 10px;">Ultrasonic</button>
+                  </div>
+
+                  <div class="iot-node-status-row">
+                    <div class="node-status-tile">
+                      <span class="tile-label">Node Status</span>
+                      <span id="iot-status" class="status-indicator online">ONLINE</span>
+                    </div>
+                    <div class="node-status-tile">
+                      <span class="tile-label">Last Reading</span>
+                      <span id="iot-temp" class="font-mono text-white text-lg">22.1 °C</span>
+                    </div>
+                    <div class="node-status-tile">
+                      <span class="tile-label">Packet Alert</span>
+                      <span id="iot-alert" class="status-indicator stable">NOMINAL</span>
+                    </div>
+                  </div>
+                  <div class="iot-actions">
+                    <button id="btn-toggle-iot" class="action-btn">Disconnect Node</button>
+                    <button id="btn-spike-iot" class="action-btn">Simulate Spike</button>
+                  </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <div class="iot-graph-card">
+                    <div class="graph-header font-mono">
+                      <span>telemetry_stream_v2.log</span>
+                      <span class="blink-green-dot"></span>
+                    </div>
+                    <div class="graph-body">
+                      <div id="iot-graph-container" style="width:100%; height:110px;">
+                        <svg class="telemetry-svg" viewBox="0 0 360 110" style="height: 110px;">
+                          <path id="iot-path" d="" fill="none" stroke="#00f0ff" stroke-width="2.5" />
+                          <path id="iot-path-fill" d="" fill="rgba(0, 240, 255, 0.05)" />
+                        </svg>
+                      </div>
+                      <div id="iot-offline-mask" class="graph-offline-mask" style="display: none;">
+                        <span>CONNECTION LINK DOWN</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- AT Serial Console Input -->
+                  <div class="ai-terminal-wrapper" style="height: 140px;">
+                    <div class="terminal-header" style="display: flex; justify-content: space-between;">
+                      <span class="terminal-title">Serial AT Command Console</span>
+                      <span style="font-size: 7px; color: var(--text-dark);">COM4 // 115200 BAUD</span>
+                    </div>
+                    <div id="serial-terminal-body" class="terminal-body font-mono" style="font-size: 9px; padding: 6px;">
+                      <div class="terminal-line">LAYRD Edge node serial terminal v1.2</div>
+                      <div class="terminal-line">Type AT commands or click quick nodes below to query firmware.</div>
+                      <div class="terminal-line">Ready.</div>
+                    </div>
+                    <form id="serial-command-form" style="display: flex; border-top: 1px solid rgba(255,255,255,0.04); background: rgba(0,0,0,0.1);">
+                      <input id="serial-input" type="text" placeholder="Type AT command (e.g. AT, AT+STATUS, AT+READ)..." style="flex: 1; background: transparent; border: none; color: #fff; font-size: 9px; fontFamily: monospace; padding: 6px 10px; outline: none;" />
+                      <button type="submit" style="background: transparent; border: none; color: var(--text-gray); padding: 0 10px; cursor: pointer; display: flex; align-items: center;">
+                        <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Connect Portal (Netlify Forms Integration) -->
+      <section class="section-wrapper reveal-on-scroll" id="contact">
+        <div class="section-header">
+          <span class="section-label">06 // Connect</span>
+          <h2 class="section-title">Join the Guild</h2>
+          <p>Take the leap. Find your engineering potential and join our active build network.</p>
+        </div>
+
+        <div class="contact-hub-wrapper">
+          <div class="contact-card glass-panel">
+            <div id="contact-success" class="success-message" style="display: none;">
+              <span>✓ Transmission established. Welcome to the Guild.</span>
+            </div>
+            
+            <form id="contact-form" class="contact-form" name="contact" method="POST" data-netlify="true">
+              <!-- Netlify form marker -->
+              <input type="hidden" name="form-name" value="contact" />
+              
+              <div class="form-group-row">
+                <div class="form-group">
+                  <label class="form-label">Name</label>
+                  <input type="text" name="name" class="form-input" required />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Email</label>
+                  <input type="email" name="email" class="form-input" required />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Select Inquiry</label>
+                <select name="inquiry" class="form-input">
+                  <option>Join the Engineering Guild</option>
+                  <option>Request School/College Demo</option>
+                  <option>General Inquiry</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Why do you want to build?</label>
+                <textarea name="why_build" class="form-input" rows="3" placeholder="Tell us about the project you want to create..." required></textarea>
+              </div>
+              <button type="submit" class="form-submit-btn">Apply for Membership</button>
+            </form>
+          </div>
+
+          <div class="contact-info-card glass-panel">
+            <div class="info-header">
+              <h3 class="info-title">Layrd.Tech Guild</h3>
+              <p>Fostering hardware literacy and community creators.</p>
+            </div>
+            <div class="info-items-list">
+              <div class="info-item">
+                <div>
+                  <div class="info-label">Direct Mail</div>
+                  <a href="mailto:layrd.tech@gmail.com" class="info-link">layrd.tech@gmail.com</a>
+                </div>
+              </div>
+            </div>
+            <div class="social-grid">
+              <h4 class="social-title">Secure Nodes</h4>
+              <div class="social-links-row">
+                <a href="https://instagram.com/layrd.tech" class="social-btn" target="_blank">IG</a>
+                <a href="https://twitter.com/layrd.tech" class="social-btn" target="_blank">TW</a>
+                <a href="https://github.com/layrd-tech" class="social-btn" target="_blank">GH</a>
+                <a href="https://linkedin.com/company/layrdtech" class="social-btn" target="_blank">LN</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Build Log Newsletter (Netlify Forms Integration) -->
+      <section class="section-wrapper reveal-on-scroll newsletter-section">
+        <div class="newsletter-card glass-panel animate-on-hover">
+          <h3 class="sandbox-title">Subscribe to the Build Log</h3>
+          <p class="sandbox-panel-desc">Get hardware schematics, firmware repositories, and community project logs delivered bi-weekly.</p>
+          <div id="newsletter-success" class="success-message" style="display: none;">
+            <span>✓ Subscribed to the Build Log node. Welcome.</span>
+          </div>
+          <form id="newsletter-form" class="newsletter-form" name="newsletter" method="POST" data-netlify="true">
+            <!-- Netlify form marker -->
+            <input type="hidden" name="form-name" value="newsletter" />
+            
+            <input type="email" name="email" class="form-input" placeholder="Enter your email address" required />
+            <button type="submit" class="newsletter-btn">Subscribe</button>
+          </form>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <p class="footer-text">
+          © 2026 Layrd.Tech. Supporting generation-shaping developers & creators. All rights reserved.
+        </p>
+      </footer>
+    </div>
+
+    <!-- CORE INTERACTION SCRIPT -->
+    <script>
+      // 1. PRELOADER
+      const preloader = document.getElementById('preloader');
+      const loaderStatus = document.getElementById('preloader-status');
+      const loaderProgress = document.getElementById('preloader-progress');
+      const loaderPct = document.getElementById('preloader-percentage');
+
+      const loaderLogs = [
+        "Compiling Neural Architectures (Generative AI)...",
+        "Linking Telemetry Nodes (IoT & Edge Robotics)...",
+        "Establishing Guild Consensus (Web3)...",
+        "Synchronizing Minimalist Interface...",
+        "Experience Mounted."
+      ];
+
+      let progress = 0;
+      const loaderInterval = setInterval(() => {
+        progress += 4;
+        if (progress > 100) progress = 100;
+        
+        loaderProgress.style.width = progress + '%';
+        loaderPct.textContent = progress + '%';
+
+        const logIdx = Math.min(
+          loaderLogs.length - 1,
+          Math.floor((progress / 100) * loaderLogs.length)
+        );
+        loaderStatus.textContent = loaderLogs[logIdx];
+
+        if (progress === 100) {
+          clearInterval(loaderInterval);
+          setTimeout(() => {
+            preloader.style.opacity = '0';
+            setTimeout(() => preloader.style.display = 'none', 500);
+          }, 300);
+        }
+      }, 25);
+
+      // 2. CUSTOM CURSOR
+      const cursorCore = document.getElementById('cursor-core');
+      const cursorRing = document.getElementById('cursor-ring');
+      let mouseX = 0, mouseY = 0;
+      let ringX = 0, ringY = 0;
+
+      window.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        cursorCore.style.left = mouseX + 'px';
+        cursorCore.style.top = mouseY + 'px';
+      });
+
+      function updateRing() {
+        const dx = mouseX - ringX;
+        const dy = mouseY - ringY;
+        ringX += dx * 0.18;
+        ringY += dy * 0.18;
+        cursorRing.style.left = ringX + 'px';
+        cursorRing.style.top = ringY + 'px';
+        requestAnimationFrame(updateRing);
+      }
+      requestAnimationFrame(updateRing);
+
+      window.addEventListener('click', (e) => {
+        const ripple = document.createElement('div');
+        ripple.className = 'click-ripple';
+        ripple.style.left = e.clientX + 'px';
+        ripple.style.top = e.clientY + 'px';
+        document.body.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 500);
+      });
+
+      document.addEventListener('mouseover', (e) => {
+        const target = e.target;
+        const isInteractive = 
+          target.tagName === 'BUTTON' || 
+          target.tagName === 'A' || 
+          target.closest('button') || 
+          target.closest('a') || 
+          target.closest('.interactive-card');
+        
+        if (isInteractive) {
+          cursorCore.classList.add('hovered');
+          cursorRing.classList.add('hovered');
+        } else {
+          cursorCore.classList.remove('hovered');
+          cursorRing.classList.remove('hovered');
+        }
+      });
+
+      // 3. RADIAL SPOTLIGHT
+      const spotlight = document.getElementById('radial-spotlight');
+      window.addEventListener('mousemove', (e) => {
+        spotlight.style.left = e.clientX + 'px';
+        spotlight.style.top = e.clientY + 'px';
+      });
+
+      // 4. SCROLL ANIMATIONS (INTERSECTION OBSERVER) & PARALLAX GLOW SPHERES
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('active');
+          }
+        });
+      }, { threshold: 0.1 });
+
+      document.querySelectorAll('.reveal-on-scroll').forEach(el => observer.observe(el));
+
+      // Parallax scrolls
+      const glowCyan = document.getElementById('glow-cyan');
+      const glowPurple = document.getElementById('glow-purple');
+      const glowCyanBottom = document.getElementById('glow-cyan-bottom');
+      const logoParallax = document.getElementById('logo-parallax-element');
+      const ambientGrid = document.getElementById('ambient-grid');
+
+      window.addEventListener('scroll', () => {
+        const scrolled = window.pageYOffset;
+        glowCyan.style.transform = `translateY(${scrolled * 0.12}px)`;
+        glowPurple.style.transform = `translateY(${scrolled * 0.08}px)`;
+        glowCyanBottom.style.transform = `translateY(${scrolled * 0.05}px)`;
+        
+        // Translate grid downwards on scroll (smooth 3D depth)
+        if (ambientGrid) {
+          ambientGrid.style.transform = `translateY(${scrolled * 0.15}px)`;
+        }
+        
+        // Tilt logo slightly on scroll
+        if (logoParallax) {
+          logoParallax.style.transform = `translateY(${scrolled * 0.06}px) rotateY(${scrolled * 0.15}deg)`;
+        }
+      });
+
+      // Logo follow mouse mousemove tilt
+      const logoContainer = document.querySelector('.logo-showcase-container');
+      if (logoContainer) {
+        window.addEventListener('mousemove', (e) => {
+          const cx = window.innerWidth / 2;
+          const cy = window.innerHeight / 2;
+          const dx = e.clientX - cx;
+          const dy = e.clientY - cy;
+          const tiltX = (dy / cy) * 15;
+          const tiltY = (dx / cx) * 15;
+          logoContainer.style.transform = `rotateX(${-tiltX}deg) rotateY(${tiltY}deg)`;
+        });
+      }
+
+      // 5. SANDBOX LOGIC
+      const tabs = ['elec', 'ai', 'iot'];
+      tabs.forEach(tab => {
+        document.getElementById('tab-' + tab).addEventListener('click', () => {
+          tabs.forEach(t => {
+            document.getElementById('tab-' + t).classList.remove('active');
+            document.getElementById('panel-' + t).style.display = 'none';
+          });
+          document.getElementById('tab-' + tab).classList.add('active');
+          document.getElementById('panel-' + tab).style.display = 'block';
+          if (tab === 'ai') {
+            drawDecisionBoundary();
+          }
+        });
+      });
+
+      // A. Ohm's Law Simulator (Electronics Lab)
+      const inputVolt = document.getElementById('elec-voltage');
+      const inputRes = document.getElementById('elec-resistance');
+      const valVoltText = document.getElementById('elec-voltage-val');
+      const valResText = document.getElementById('elec-resistance-val');
+      const currentValText = document.getElementById('elec-current-val');
+      const circuitStatus = document.getElementById('elec-status');
+      
+      const schVolt = document.getElementById('sch-volt');
+      const schRes = document.getElementById('sch-res');
+      const ledGlow = document.getElementById('sch-led-glow');
+      const circuitFlow = document.getElementById('circuit-current-flow');
+
+      const bandsRow = document.getElementById('resistor-color-bands-row');
+      const formulaSteps = document.getElementById('elec-formula-steps');
+      const powerSteps = document.getElementById('elec-power-steps');
+      const powerWarning = document.getElementById('elec-power-warning');
+
+      function getResistorColorBands(ohms) {
+        const code = [
+          { color: 'black', val: 0, bg: '#000000', text: '#fff' },
+          { color: 'brown', val: 1, bg: '#8B4513', text: '#fff' },
+          { color: 'red', val: 2, bg: '#FF0000', text: '#fff' },
+          { color: 'orange', val: 3, bg: '#FFA500', text: '#000' },
+          { color: 'yellow', val: 4, bg: '#FFFF00', text: '#000' },
+          { color: 'green', val: 5, bg: '#008000', text: '#fff' },
+          { color: 'blue', val: 6, bg: '#0000FF', text: '#fff' },
+          { color: 'violet', val: 7, bg: '#EE82EE', text: '#000' },
+          { color: 'gray', val: 8, bg: '#808080', text: '#fff' },
+          { color: 'white', val: 9, bg: '#FFFFFF', text: '#000' }
+        ];
+
+        let val = ohms;
+        let multiplier = 0;
+        if (val >= 1000) {
+          val = ohms / 10;
+          multiplier = 2;
+        } else if (val >= 100) {
+          val = ohms / 10;
+          multiplier = 1;
+        } else {
+          multiplier = 0;
+        }
+
+        const str = Math.round(val).toString().padStart(2, '0');
+        const digit1 = parseInt(str[0]) || 0;
+        const digit2 = parseInt(str[1]) || 0;
+
+        const color1 = code.find(c => c.val === digit1) || code[0];
+        const color2 = code.find(c => c.val === digit2) || code[0];
+        const color3 = code.find(c => c.val === multiplier) || code[0];
+        
+        return [
+          { label: color1.color, color: color1.bg, text: color1.text },
+          { label: color2.color, color: color2.bg, text: color2.text },
+          { label: `10^${multiplier}`, color: color3.bg, text: color3.text },
+          { label: 'Gold (5%)', color: '#D4AF37', text: '#000' }
+        ];
+      }
+
+      function calculateCircuit() {
+        const V = parseFloat(inputVolt.value);
+        const R = parseFloat(inputRes.value);
+        
+        valVoltText.textContent = V.toFixed(1);
+        valResText.textContent = Math.round(R);
+        schVolt.textContent = V.toFixed(1) + 'V';
+        schRes.textContent = Math.round(R) + 'Ω';
+
+        // Ohm's law: I = V / R (mA is I * 1000)
+        const I = (V / R) * 1000;
+        currentValText.textContent = I.toFixed(1) + ' mA';
+
+        const power = V * (I / 1000);
+
+        ledGlow.className = 'led-glow-glow';
+        
+        if (I < 5) {
+          circuitStatus.textContent = 'LED DIM / OFF';
+          circuitStatus.className = 'status-indicator offline';
+          ledGlow.classList.add('glow-off');
+          circuitFlow.style.setProperty('--current-flow-duration', '0s');
+          circuitFlow.style.stroke = 'rgba(255, 255, 255, 0.08)';
+        } else if (I >= 5 && I <= 30) {
+          circuitStatus.textContent = 'OPTIMAL CURRENT';
+          circuitStatus.className = 'status-indicator online';
+          ledGlow.classList.add('glow-on');
+          const duration = Math.max(0.3, 15 / I);
+          circuitFlow.style.setProperty('--current-flow-duration', `${duration.toFixed(2)}s`);
+          circuitFlow.style.stroke = 'var(--primary-glow)';
+        } else {
+          circuitStatus.textContent = 'DANGER: OVERCURRENT';
+          circuitStatus.className = 'status-indicator alert-fired';
+          ledGlow.classList.add('glow-danger');
+          circuitFlow.style.setProperty('--current-flow-duration', '0.12s');
+          circuitFlow.style.stroke = '#ff4b4b';
+        }
+
+        // Draw bands
+        const activeBands = getResistorColorBands(R);
+        bandsRow.innerHTML = '';
+        activeBands.forEach(band => {
+          const div = document.createElement('div');
+          div.style.flex = '1';
+          div.style.background = band.color;
+          div.style.color = band.text;
+          div.style.fontSize = '9px';
+          div.style.padding = '4px';
+          div.style.textAlign = 'center';
+          div.style.borderRadius = '4px';
+          div.style.border = '1px solid rgba(255,255,255,0.06)';
+          div.style.fontFamily = 'monospace';
+          div.textContent = band.label.toUpperCase();
+          bandsRow.appendChild(div);
+        });
+
+        // Math steps
+        formulaSteps.innerHTML = `Formula: <strong>I = V / R</strong> ➔ ${V.toFixed(1)}V / ${R}Ω = <strong>${I.toFixed(1)} mA</strong>`;
+        powerSteps.innerHTML = `Power: <strong>P = V * I</strong> ➔ ${V.toFixed(1)}V * ${(I/1000).toFixed(4)}A = <strong>${power.toFixed(3)} W</strong>`;
+        if (power > 0.25) {
+          powerWarning.textContent = '⚠️ WARNING: Power exceeds standard 1/4W resistor rating.';
+          powerWarning.style.color = '#ff4b4b';
+        } else {
+          powerWarning.textContent = '✓ Safe under standard 1/4W resistor rating.';
+          powerWarning.style.color = '#00f0ff';
+        }
+      }
+
+      inputVolt.addEventListener('input', calculateCircuit);
+      inputRes.addEventListener('input', calculateCircuit);
+      calculateCircuit(); // Init call
+
+      // B. AI Networks Decision Boundary Training
+      const canvas = document.getElementById('ai-canvas');
+      const btnTrainAi = document.getElementById('btn-train-ai');
+      const aiLoss = document.getElementById('ai-loss');
+      const aiAcc = document.getElementById('ai-acc');
+      const aiEpoch = document.getElementById('ai-epoch');
+      const aiTerminal = document.getElementById('ai-terminal');
+
+      const dataset = [];
+      for (let i = 0; i < 40; i++) {
+        const x = 0.1 + Math.random() * 0.8;
+        const y = 0.1 + Math.random() * 0.8;
+        const dist = Math.sqrt((x - 0.5) ** 2 + (y - 0.5) ** 2);
+        const label = dist < 0.28 ? 1 : 0;
+        dataset.push({ x, y, label });
+      }
+
+      const weights = { w1: 0.1, w2: -0.2, bias: 0.05 };
+
+      function predict(x, y) {
+        const z = x * weights.w1 + y * weights.w2 + weights.bias;
+        return 1 / (1 + Math.exp(-z));
+      }
+
+      function drawDecisionBoundary() {
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        const scale = 4;
+        for (let py = 0; py < height; py += scale) {
+          for (let px = 0; px < width; px += scale) {
+            const x = px / width;
+            const y = py / height;
+            const pred = predict(x, y);
+            const r = Math.round(pred * 112);
+            const g = Math.round((1 - pred) * 240);
+            const b = Math.round((1 - pred) * 255 + pred * 50);
+            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.22)`;
+            ctx.fillRect(px, py, scale, scale);
+          }
+        }
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(width / 2, height / 2, 0.28 * width, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        dataset.forEach(pt => {
+          ctx.beginPath();
+          ctx.arc(pt.x * width, pt.y * height, 5, 0, 2 * Math.PI);
+          if (pt.label === 1) {
+            ctx.fillStyle = '#00f0ff';
+            ctx.strokeStyle = '#ffffff';
+          } else {
+            ctx.fillStyle = '#7000ff';
+            ctx.strokeStyle = '#3b3d46';
+          }
+          ctx.lineWidth = 1;
+          ctx.fill();
+          ctx.stroke();
+        });
+      }
+
+      let training = false;
+      btnTrainAi.addEventListener('click', () => {
+        if (training) return;
+        training = true;
+        btnTrainAi.disabled = true;
+        btnTrainAi.textContent = 'Optimizing Weights...';
+        aiTerminal.innerHTML = '<div class="terminal-line">&gt; [INIT] Loaded 40 2D coordinate vectors...</div>';
+        
+        let epoch = 0;
+        const lr = 0.1;
+
+        const interval = setInterval(() => {
+          epoch++;
+          let totalLoss = 0;
+          let correct = 0;
+
+          dataset.forEach(pt => {
+            const pred = predict(pt.x, pt.y);
+            const error = pt.label - pred;
+            totalLoss += error ** 2;
+
+            weights.w1 += lr * error * pt.x;
+            weights.w2 += lr * error * pt.y;
+            weights.bias += lr * error;
+
+            const isCorrect = (pred >= 0.5 ? 1 : 0) === pt.label;
+            if (isCorrect) correct++;
+          });
+
+          const averageLoss = totalLoss / dataset.length;
+          const accuracy = correct / dataset.length;
+
+          aiLoss.textContent = averageLoss.toFixed(4);
+          aiAcc.textContent = (accuracy * 100).toFixed(1) + '%';
+          aiEpoch.textContent = epoch + '/20';
+
+          const line = document.createElement('div');
+          line.className = 'terminal-line';
+          line.textContent = `> Epoch ${epoch}/20 | Loss: ${averageLoss.toFixed(4)} | Acc: ${(accuracy * 100).toFixed(1)}%`;
+          aiTerminal.appendChild(line);
+          aiTerminal.scrollTop = aiTerminal.scrollHeight;
+
+          drawDecisionBoundary();
+
+          if (epoch >= 20) {
+            clearInterval(interval);
+            training = false;
+            btnTrainAi.disabled = false;
+            btnTrainAi.textContent = 'Train Neural Net';
+            
+            const successLine = document.createElement('div');
+            successLine.className = 'terminal-line';
+            successLine.style.color = '#fff';
+            successLine.textContent = `> [SUCCESS] Weights convergence achieved.`;
+            aiTerminal.appendChild(successLine);
+            aiTerminal.scrollTop = aiTerminal.scrollHeight;
+          }
+        }, 150);
+      });
+
+      // D. IoT Telemetry and Serial AT Console
+      let iotOnline = true;
+      let iotAnomaly = false;
+      let activeSensorType = 'temp';
+      let telemetryData = Array.from({ length: 15 }, (_, i) => ({ time: i, val: 22 + Math.random() * 2 }));
+
+      const iotStatus = document.getElementById('iot-status');
+      const iotTemp = document.getElementById('iot-temp');
+      const iotAlert = document.getElementById('iot-alert');
+      const btnToggleIot = document.getElementById('btn-toggle-iot');
+      const btnSpikeIot = document.getElementById('btn-spike-iot');
+      const iotOfflineMask = document.getElementById('iot-offline-mask');
+      const iotPath = document.getElementById('iot-path');
+      const iotPathFill = document.getElementById('iot-path-fill');
+
+      const btnSensorTemp = document.getElementById('btn-sensor-temp');
+      const btnSensorLight = document.getElementById('btn-sensor-light');
+      const btnSensorDist = document.getElementById('btn-sensor-dist');
+
+      const serialTerminalBody = document.getElementById('serial-terminal-body');
+      const serialForm = document.getElementById('serial-command-form');
+      const serialInput = document.getElementById('serial-input');
+
+      function sendSerialCmd(cmd) {
+        const line = document.createElement('div');
+        line.className = 'terminal-line';
+        line.textContent = `> ${cmd}`;
+        serialTerminalBody.appendChild(line);
+
+        setTimeout(() => {
+          const resLine = document.createElement('div');
+          resLine.className = 'terminal-line';
+
+          if (!iotOnline && cmd !== 'AT+CONNECT' && cmd !== 'AT') {
+            resLine.textContent = 'ERROR: NODE DISCONNECTED (No response)';
+            serialTerminalBody.appendChild(resLine);
+            serialTerminalBody.scrollTop = serialTerminalBody.scrollHeight;
+            return;
+          }
+
+          let response = '';
+          if (cmd === 'AT') {
+            response = 'OK';
+          } else if (cmd === 'AT+CONNECT') {
+            iotOnline = true;
+            iotStatus.textContent = 'ONLINE';
+            iotStatus.className = 'status-indicator online';
+            iotOfflineMask.style.display = 'none';
+            btnToggleIot.textContent = 'Disconnect Node';
+            btnSpikeIot.disabled = false;
+            response = 'OK [Node link online]';
+          } else if (cmd === 'AT+DISCONNECT') {
+            iotOnline = false;
+            iotStatus.textContent = 'OFFLINE';
+            iotStatus.className = 'status-indicator offline';
+            iotOfflineMask.style.display = 'flex';
+            btnToggleIot.textContent = 'Connect Node';
+            btnSpikeIot.disabled = true;
+            iotTemp.textContent = 'N/A';
+            response = 'OK [Node link terminated]';
+          } else if (cmd === 'AT+STATUS') {
+            response = `+STATUS: ONLINE=1; VOLT=3.3V; SENSOR_TYPE=${activeSensorType.toUpperCase()}`;
+          } else if (cmd === 'AT+READ') {
+            const curVal = telemetryData.length ? telemetryData[telemetryData.length - 1].val : 0;
+            const unit = activeSensorType === 'temp' ? 'C' : activeSensorType === 'light' ? 'ADC' : 'CM';
+            response = `+READ: ${curVal.toFixed(2)} ${unit}`;
+          } else if (cmd === 'AT+ANOMALY') {
+            response = 'OK [Injecting telemetry hardware anomaly]';
+          } else if (cmd.startsWith('AT+SENSOR=')) {
+            const type = cmd.split('=')[1];
+            if (type === 'TEMP' || type === 'LIGHT' || type === 'DIST') {
+              setSensorType(type.toLowerCase());
+              response = `OK [Configured active telemetry stream: ${type}]`;
+            } else {
+              response = 'ERROR: INVALID SENSOR PARAM (Use TEMP, LIGHT, or DIST)';
+            }
+          } else {
+            response = `ERROR: COMMAND NOT FOUND (Type AT, AT+STATUS, AT+READ, AT+SENSOR=TEMP|LIGHT|DIST)`;
+          }
+
+          resLine.textContent = response;
+          serialTerminalBody.appendChild(resLine);
+          serialTerminalBody.scrollTop = serialTerminalBody.scrollHeight;
+        }, 100);
+      }
+
+      serialForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const cmd = serialInput.value.toUpperCase().trim();
+        if (!cmd) return;
+        serialInput.value = '';
+        sendSerialCmd(cmd);
+      });
+
+      function setSensorType(type) {
+        activeSensorType = type;
+        btnSensorTemp.classList.remove('primary-btn');
+        btnSensorLight.classList.remove('primary-btn');
+        btnSensorDist.classList.remove('primary-btn');
+
+        if (type === 'temp') btnSensorTemp.classList.add('primary-btn');
+        if (type === 'light') btnSensorLight.classList.add('primary-btn');
+        if (type === 'dist') btnSensorDist.classList.add('primary-btn');
+
+        telemetryData = Array.from({ length: 15 }, (_, i) => ({
+          time: i,
+          val: type === 'temp' ? 22 + Math.random() * 2 
+             : type === 'light' ? 620 + Math.random() * 40
+             : 18 + Math.random() * 5
+        }));
+        updateIotGraph();
+      }
+
+      btnSensorTemp.addEventListener('click', () => { setSensorType('temp'); sendSerialCmd('AT+SENSOR=TEMP'); });
+      btnSensorLight.addEventListener('click', () => { setSensorType('light'); sendSerialCmd('AT+SENSOR=LIGHT'); });
+      btnSensorDist.addEventListener('click', () => { setSensorType('dist'); sendSerialCmd('AT+SENSOR=DIST'); });
+
+      function updateIotGraph() {
+        if (telemetryData.length < 2) return;
+        const maxVal = activeSensorType === 'temp' ? 45 : activeSensorType === 'light' ? 800 : 35;
+        const minVal = activeSensorType === 'temp' ? 15 : activeSensorType === 'light' ? 100 : 2;
+        
+        const w = 360, h = 110;
+        const pts = telemetryData.map((t, i) => {
+          const x = (i / (telemetryData.length - 1)) * w;
+          const pct = (t.val - minVal) / (maxVal - minVal);
+          const y = h - pct * h;
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        });
+        const pathD = `M ${pts.join(' L ')}`;
+        iotPath.setAttribute('d', pathD);
+        iotPathFill.setAttribute('d', `${pathD} L 360,110 L 0,110 Z`);
+      }
+
+      setInterval(() => {
+        if (!iotOnline) return;
+        
+        const nextTime = telemetryData.length ? telemetryData[telemetryData.length - 1].time + 1 : 0;
+        let baseVal = 0;
+        if (activeSensorType === 'temp') {
+          baseVal = iotAnomaly ? 39 + Math.random() * 4 : 22 + Math.random() * 1.5;
+          iotTemp.textContent = baseVal.toFixed(1) + ' °C';
+        } else if (activeSensorType === 'light') {
+          baseVal = iotAnomaly ? 120 + Math.random() * 30 : 640 + Math.random() * 30;
+          iotTemp.textContent = Math.round(baseVal) + ' ADC';
+        } else {
+          baseVal = iotAnomaly ? 4 + Math.random() * 1.5 : 19 + Math.random() * 3;
+          iotTemp.textContent = baseVal.toFixed(1) + ' CM';
+        }
+        
+        telemetryData.push({ time: nextTime, val: parseFloat(baseVal.toFixed(2)) });
+        if (telemetryData.length > 15) telemetryData.shift();
+        updateIotGraph();
+      }, 1000);
+
+      btnToggleIot.addEventListener('click', () => {
+        const online = !iotOnline;
+        sendSerialCmd(online ? 'AT+CONNECT' : 'AT+DISCONNECT');
+      });
+
+      btnSpikeIot.addEventListener('click', triggerSpike);
+
+      function triggerSpike() {
+        if (!iotOnline || iotAnomaly) return;
+        iotAnomaly = true;
+        iotAlert.textContent = 'ANOMALY DETECTED';
+        iotAlert.className = 'status-indicator alert-fired';
+        sendSerialCmd('AT+ANOMALY');
+        
+        setTimeout(() => {
+          iotAnomaly = false;
+          iotAlert.textContent = 'NOMINAL';
+          iotAlert.className = 'status-indicator stable';
+        }, 4000);
+      }
+
+      updateIotGraph();
+      drawDecisionBoundary();
+
+      // 6. CONNECT PORTAL AJAX FORM
+      const contactForm = document.getElementById('contact-form');
+      const contactSuccess = document.getElementById('contact-success');
+      contactForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const myForm = e.target;
+        const formData = new FormData(myForm);
+        fetch("/", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams(formData).toString(),
+        })
+        .then(() => {
+          contactForm.style.display = 'none';
+          contactSuccess.style.display = 'block';
+        })
+        .catch((error) => {
+          console.error(error);
+          // Fallback simulation for local files
+          contactForm.style.display = 'none';
+          contactSuccess.style.display = 'block';
+        });
+      });
+
+      // 7. NEWSLETTER AJAX FORM
+      const newsletterForm = document.getElementById('newsletter-form');
+      const newsletterSuccess = document.getElementById('newsletter-success');
+      newsletterForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const myForm = e.target;
+        const formData = new FormData(myForm);
+        fetch("/", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams(formData).toString(),
+        })
+        .then(() => {
+          newsletterForm.style.display = 'none';
+          newsletterSuccess.style.display = 'block';
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+      });
+    </script>
+
+    <!-- AUDIO CONTROLLER ELEMENT -->
+    <div id="audio-control" class="audio-control-btn" role="button" tabindex="0" aria-label="Toggle Background Music">
+      <div class="audio-pulse"></div>
+      <span class="audio-icon">
+        <svg class="audio-svg-mute" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="display: block;">
+          <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+          <line x1="23" y1="9" x2="17" y2="15"/>
+          <line x1="17" y1="9" x2="23" y2="15"/>
+        </svg>
+        <svg class="audio-svg-play" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+          <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+        </svg>
+      </span>
+    </div>
+
+    <!-- CORE INTERACTION SCRIPT -->
+    <script>
+      // 8. AUDIO CONTROLLER INTERSTELLAR & AUTOPLAY LOGIC
+      const audio = new Audio('public/interstellar.mp3');
+      audio.loop = true;
+      
+      const audioBtn = document.getElementById('audio-control');
+      const svgMute = audioBtn.querySelector('.audio-svg-mute');
+      const svgPlay = audioBtn.querySelector('.audio-svg-play');
+
+      // Autoplay play execution with cleanup
+      let hasPlayed = false;
+      function playAudioAutomatically() {
+        if (hasPlayed) return;
+        audio.play().then(() => {
+          hasPlayed = true;
+          audioBtn.classList.add('playing');
+          svgMute.style.display = 'none';
+          svgPlay.style.display = 'block';
+          
+          // Cleanup listeners since music is successfully playing
+          document.removeEventListener('click', playAudioAutomatically);
+          document.removeEventListener('scroll', playAudioAutomatically);
+          document.removeEventListener('mousemove', playAudioAutomatically);
+          document.removeEventListener('touchstart', playAudioAutomatically);
+        }).catch(err => {
+          console.log("Autoplay waiting for initial gesture activation...");
+        });
+      }
+
+      // Try playing immediately (works if browser settings allow autoplay)
+      playAudioAutomatically();
+
+      // Fallback: Play on first touch, click, scroll or mouse move
+      document.addEventListener('click', playAudioAutomatically);
+      document.addEventListener('scroll', playAudioAutomatically);
+      document.addEventListener('mousemove', playAudioAutomatically);
+      document.addEventListener('touchstart', playAudioAutomatically);
+
+      // Button toggle control
+      audioBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Avoid triggering document click
+        if (audio.paused) {
+          audio.play().then(() => {
+            hasPlayed = true;
+            audioBtn.classList.add('playing');
+            svgMute.style.display = 'none';
+            svgPlay.style.display = 'block';
+          }).catch(err => console.log("Blocked: " + err));
+        } else {
+          audio.pause();
+          audioBtn.classList.remove('playing');
+          svgMute.style.display = 'block';
+          svgPlay.style.display = 'none';
+        }
+      });
+
+      // 9. MATRIX DIGITAL RAIN EFFECT
+      const matrixCanvas = document.getElementById('matrix-canvas');
+      if (matrixCanvas) {
+        const ctx = matrixCanvas.getContext('2d');
+        
+        function resizeMatrix() {
+          matrixCanvas.width = window.innerWidth;
+          matrixCanvas.height = window.innerHeight;
+        }
+        resizeMatrix();
+        window.addEventListener('resize', resizeMatrix);
+
+        // Binary, mathematical & engineering symbols
+        const chars = "0101100101101011λ∫ΩΔφABCDEFGHIJKLMNOPQRSTUVWXYZ<>[]{}*+-/".split("");
+        const fontSize = 14;
+        let columns = Math.floor(matrixCanvas.width / fontSize) + 1;
+        let rainDrops = Array(columns).fill(1);
+
+        window.addEventListener('resize', () => {
+          columns = Math.floor(matrixCanvas.width / fontSize) + 1;
+          const oldLen = rainDrops.length;
+          if (columns > oldLen) {
+            rainDrops.push(...Array(columns - oldLen).fill(1));
+          }
+        });
+
+        function drawMatrix() {
+          ctx.clearRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+          ctx.font = fontSize + 'px monospace';
+
+          for (let i = 0; i < rainDrops.length; i++) {
+            const headY = rainDrops[i];
+
+            // Render head and its trailing 12 characters with decreasing opacities
+            for (let j = 0; j < 12; j++) {
+              const yIndex = headY - j;
+              if (yIndex < 0) continue;
+
+              const y = yIndex * fontSize;
+              const opacity = (1 - j / 12) * 0.28; // Subtle brand blend
+
+              const char = chars[Math.floor(Math.random() * chars.length)];
+              const x = i * fontSize;
+
+              if (j === 0 && Math.random() > 0.3) {
+                // Leading head drop: glowing white
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+              } else {
+                // Alternating Cyan and Purple brand streams
+                if (i % 3 === 0) {
+                  ctx.fillStyle = `rgba(112, 0, 255, ${opacity})`;
+                } else {
+                  ctx.fillStyle = `rgba(0, 240, 255, ${opacity})`;
+                }
+              }
+
+              ctx.fillText(char, x, y);
+            }
+
+            // Move the stream head downwards
+            if (headY * fontSize > matrixCanvas.height && Math.random() > 0.975) {
+              rainDrops[i] = 0;
+            } else {
+              rainDrops[i]++;
+            }
+          }
+        }
+
+        setInterval(drawMatrix, 33);
+      }
+    </script>
+  </body>
+</html>
