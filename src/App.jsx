@@ -13,6 +13,7 @@ export default function App() {
   const [newsletterEmail, setNewsletterEmail] = useState('')
   const [newsletterSubmitted, setNewsletterSubmitted] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const audioRef = useRef(null)
 
   useEffect(() => {
@@ -22,6 +23,18 @@ export default function App() {
       if (audioRef.current) {
         audioRef.current.pause()
       }
+    }
+  }, [])
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 768px)')
+    const handleViewportChange = () => setIsMobile(mediaQuery.matches)
+
+    handleViewportChange()
+    mediaQuery.addEventListener?.('change', handleViewportChange)
+
+    return () => {
+      mediaQuery.removeEventListener?.('change', handleViewportChange)
     }
   }, [])
 
@@ -49,16 +62,18 @@ export default function App() {
 
   // Mouse tracking spotlight
   useEffect(() => {
+    if (isMobile) return
+
     const handleMouseMove = (e) => {
       setSpotlightPos({ x: e.clientX, y: e.clientY })
     }
     window.addEventListener('mousemove', handleMouseMove)
     return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [])
+  }, [isMobile])
 
   // Scroll animations & tilt interactions
   useEffect(() => {
-    if (loading) return
+    if (loading || isMobile) return
 
     const observerOptions = {
       root: null,
@@ -113,7 +128,7 @@ export default function App() {
       window.removeEventListener('mousemove', handleLogoTilt)
       clearTimeout(timer)
     }
-  }, [loading])
+  }, [loading, isMobile])
 
   const handleFormSubmit = (e) => {
     e.preventDefault()
