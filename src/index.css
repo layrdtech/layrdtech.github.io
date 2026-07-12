@@ -27,15 +27,20 @@ html {
   color: var(--text-white);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   overflow-x: hidden;
+  overflow-y: auto;
+  height: 100%;
 }
 
 body {
   overflow-x: hidden;
+  overflow-y: auto;
+  min-height: 100vh;
   background: var(--bg-black);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: auto;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 @media (max-width: 768px) {
@@ -456,6 +461,8 @@ p {
   min-height: 100vh;
   z-index: 5;
   overflow-x: hidden;
+  overflow-y: visible;
+  touch-action: pan-y;
 }
 
 .radial-spotlight {
