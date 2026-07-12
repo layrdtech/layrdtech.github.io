@@ -117,23 +117,28 @@ export default function App() {
 
   const handleFormSubmit = (e) => {
     e.preventDefault()
+
     const myForm = e.target
     const formData = new FormData(myForm)
-    fetch('/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams(formData).toString(),
-    })
-      .then(() => {
-        setSubmitted(true)
-        setTimeout(() => {
-          setSubmitted(false)
-          setEmail('')
-          setName('')
-          setMessage('')
-        }, 3000)
-      })
-      .catch((error) => console.error(error))
+    const applicantName = formData.get('name')?.toString().trim() || 'Unknown applicant'
+    const applicantEmail = formData.get('email')?.toString().trim() || 'No email provided'
+    const applicantMessage = formData.get('message')?.toString().trim() || 'No message provided.'
+
+    const subject = encodeURIComponent(`Membership application from ${applicantName}`)
+    const body = encodeURIComponent(
+      `Name: ${applicantName}\nEmail: ${applicantEmail}\n\nMessage:\n${applicantMessage}`
+    )
+
+    window.location.href = `mailto:layrd.tech@gmail.com?subject=${subject}&body=${body}`
+
+    setSubmitted(true)
+    setTimeout(() => {
+      setSubmitted(false)
+      setEmail('')
+      setName('')
+      setMessage('')
+      myForm.reset()
+    }, 3000)
   }
 
   const handleNewsletterSubmit = (e) => {
