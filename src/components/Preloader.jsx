@@ -19,6 +19,12 @@ export default function Preloader({ onComplete }) {
     // Add body class to indicate preloader active (can be used to defer heavy assets)
     document.body.classList.add('preloader-active')
 
+    // Remove initial static preloader element inserted in index.html (prevents duplicate overlays)
+    const initialPre = document.getElementById('preloader')
+    if (initialPre) {
+      try { initialPre.remove() } catch (e) { initialPre.style.display = 'none' }
+    }
+
     // Set CSS --vh to avoid mobile 100dvh jitter (address bar resize)
     const setVh = () => {
       document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`)
