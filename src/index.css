@@ -859,6 +859,29 @@ p {
     height: 60px;
   }
 
+
+/* Emergency mobile overlay fix: ensure decorative fixed layers do not block touches */
+@media (max-width: 768px) {
+  .bg-video,
+  .radial-spotlight,
+  .bg-ambient-grid,
+  .ambient-glow-sphere,
+  .custom-cursor-core,
+  .custom-cursor-ring,
+  #matrix-canvas,
+  .preloader-container {
+    pointer-events: none !important;
+    touch-action: none !important;
+  }
+
+  /* Keep the mobile nav interactive when open */
+  .mobile-nav-panel {
+    pointer-events: none !important;
+  }
+  .mobile-nav-panel.open {
+    pointer-events: auto !important;
+  }
+}
   .hero-badge {
     font-size: 0.65rem;
     padding: 4px 10px;
