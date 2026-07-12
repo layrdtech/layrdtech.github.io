@@ -402,6 +402,9 @@ p {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100vw;
+  height: 100dvh; /* use dynamic viewport height for mobile centering */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 
 .preloader-content {
@@ -884,8 +887,7 @@ p {
   .ambient-glow-sphere,
   .custom-cursor-core,
   .custom-cursor-ring,
-  #matrix-canvas,
-  .preloader-container {
+  #matrix-canvas {
     pointer-events: none !important;
     touch-action: none !important;
   }
