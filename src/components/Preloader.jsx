@@ -19,6 +19,13 @@ export default function Preloader({ onComplete }) {
     // Add body class to indicate preloader active (can be used to defer heavy assets)
     document.body.classList.add('preloader-active')
 
+    // Set CSS --vh to avoid mobile 100dvh jitter (address bar resize)
+    const setVh = () => {
+      document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`)
+    }
+    setVh()
+    window.addEventListener('resize', setVh)
+
     // Pause and hide background video to reduce CPU during preloader
     const bgVideo = document.querySelector('.bg-video')
     if (bgVideo) {
@@ -59,6 +66,7 @@ export default function Preloader({ onComplete }) {
     return () => {
       if (rafId) cancelAnimationFrame(rafId)
       document.body.classList.remove('preloader-active')
+      window.removeEventListener('resize', setVh)
     }
   }, [onComplete])
 
@@ -80,7 +88,7 @@ export default function Preloader({ onComplete }) {
         <div className="progress-bar-wrapper">
           <div 
             className="progress-bar-fill" 
-            style={{ width: `${progress}%` }}
+            style={{ transform: `scaleX(${progress / 100})` }}
           ></div>
         </div>
         
