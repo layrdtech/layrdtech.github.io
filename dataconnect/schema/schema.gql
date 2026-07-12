@@ -1,0 +1,37 @@
+type User @table {
+  username: String!
+  email: String!
+  displayName: String!
+  bio: String
+  profileImageUrl: String
+  socialLinks: String
+}
+
+type Project @table {
+  title: String!
+  description: String!
+  user: User!
+  link: String
+  imageUrl: String
+  createdAt: Timestamp
+}
+
+type Post @table {
+  title: String!
+  body: String!
+  user: User!
+  status: String!
+  imageUrl: String
+  createdAt: Timestamp
+}
+
+type Tag @table {
+  name: String!
+  colorCode: String
+}
+
+type TaggedItem @table {
+  tag: Tag!
+  project: Project
+  post: Post
+}

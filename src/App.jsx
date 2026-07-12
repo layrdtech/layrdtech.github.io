@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Brain, Cpu, Layers } from 'lucide-react'
 import CustomCursor from './components/CustomCursor.jsx'
 import TechSandbox from './components/TechSandbox.jsx'
+import { getStoredSubmissionData, storeContactMessage, storeSubscription } from './lib/persistence.js'
 
 export default function App() {
   const [loading, setLoading] = useState(true)
@@ -15,6 +16,7 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [submissionData, setSubmissionData] = useState(() => getStoredSubmissionData())
   const audioRef = useRef(null)
 
   useEffect(() => {
@@ -24,6 +26,23 @@ export default function App() {
       if (audioRef.current) {
         audioRef.current.pause()
       }
+    }
+  }, [])
+
+  useEffect(() => {
+    const syncSubmissionState = () => {
+      const data = getStoredSubmissionData()
+      setSubmissionData(data)
+      if (typeof window !== 'undefined') {
+        window.__LAYRD_SUBMISSIONS__ = data
+      }
+    }
+
+    syncSubmissionState()
+    window.addEventListener('layrd:data-updated', syncSubmissionState)
+
+    return () => {
+      window.removeEventListener('layrd:data-updated', syncSubmissionState)
     }
   }, [])
 
@@ -63,12 +82,26 @@ export default function App() {
     }
   }
 
-  const handleNewsletterSubmit = (e) => {
+  const handleNewsletterSubmit = async (e) => {
     e.preventDefault()
+    const myForm = e.target
+    const formData = new FormData(myForm)
+    const subscriberEmail = formData.get('email')?.toString().trim() || newsletterEmail
+
+    if (!subscriberEmail) return
+
+    await storeSubscription({
+      email: subscriberEmail,
+      createdAt: new Date().toISOString(),
+      source: 'newsletter-form'
+    })
+
+    setSubmissionData(getStoredSubmissionData())
     setNewsletterSubmitted(true)
     setTimeout(() => {
       setNewsletterSubmitted(false)
       setNewsletterEmail('')
+      myForm.reset()
     }, 3000)
   }
 
@@ -142,7 +175,7 @@ export default function App() {
     }
   }, [loading, isMobile])
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault()
 
     const myForm = e.target
@@ -150,6 +183,16 @@ export default function App() {
     const applicantName = formData.get('name')?.toString().trim() || 'Unknown applicant'
     const applicantEmail = formData.get('email')?.toString().trim() || 'No email provided'
     const applicantMessage = formData.get('message')?.toString().trim() || 'No message provided.'
+
+    await storeContactMessage({
+      name: applicantName,
+      email: applicantEmail,
+      message: applicantMessage,
+      createdAt: new Date().toISOString(),
+      source: 'membership-form'
+    })
+
+    setSubmissionData(getStoredSubmissionData())
 
     const subject = encodeURIComponent(`Membership application from ${applicantName}`)
     const body = encodeURIComponent(
@@ -166,25 +209,6 @@ export default function App() {
       setMessage('')
       myForm.reset()
     }, 3000)
-  }
-
-  const handleNewsletterSubmit = (e) => {
-    e.preventDefault()
-    const myForm = e.target
-    const formData = new FormData(myForm)
-    fetch('/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams(formData).toString(),
-    })
-      .then(() => {
-        setNewsletterSubmitted(true)
-        setTimeout(() => {
-          setNewsletterSubmitted(false)
-          setNewsletterEmail('')
-        }, 3000)
-      })
-      .catch((error) => console.error(error))
   }
 
   const pillars = [
@@ -222,6 +246,10 @@ export default function App() {
     { title: "Electrical Circuits & Signal Analysis", description: "Verify circuit nodes, analyze sine waves with virtual oscilloscopes, and master power logic.", stream: "Electrical Engineering" },
     { title: "3D Printing & Design Slicing", description: "Draft CAD wireframes, slice geometries, and print functional physical objects.", stream: "Engineering, Medicine" }
   ]
+
+  const recentSubmissions = [...(submissionData?.messages || []), ...(submissionData?.subscriptions || [])]
+    .slice(-6)
+    .reverse()
 
   if (loading) {
     return (
@@ -625,6 +653,34 @@ export default function App() {
               />
               <button type="submit" className="newsletter-btn">Subscribe</button>
             </form>
+          )}
+        </div>
+      </section>
+
+      <section className="section-wrapper reveal-on-scroll">
+        <div className="glass-panel" style={{ padding: '24px', borderRadius: '18px' }}>
+          <h3 className="sandbox-title" style={{ marginBottom: '8px' }}>Recent submissions</h3>
+          <p className="sandbox-panel-desc" style={{ marginBottom: '16px' }}>
+            Entries saved to Firebase and local storage will appear here instantly after you submit the forms.
+          </p>
+          {recentSubmissions.length === 0 ? (
+            <p style={{ color: '#b8c0d8', fontSize: '0.95rem' }}>No submissions yet. Submit the membership or newsletter form to see them here.</p>
+          ) : (
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '10px' }}>
+              {recentSubmissions.map((item) => {
+                const label = item.type === 'subscription' ? 'Subscription' : 'Message'
+                const detail = item.type === 'subscription'
+                  ? item.email || 'No email'
+                  : `${item.name || 'Unknown'} • ${item.email || 'No email'}`
+
+                return (
+                  <li key={item.id} style={{ padding: '12px 14px', borderRadius: '12px', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#fff' }}>{label}</div>
+                    <div style={{ fontSize: '0.9rem', color: '#b8c0d8', marginTop: '4px' }}>{detail}</div>
+                  </li>
+                )
+              })}
+            </ul>
           )}
         </div>
       </section>
