@@ -14,6 +14,7 @@ export default function App() {
   const [newsletterSubmitted, setNewsletterSubmitted] = useState(false)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const audioRef = useRef(null)
 
   useEffect(() => {
@@ -265,7 +266,7 @@ export default function App() {
           </div>
           <span className="brand-name">LAYRD.TECH</span>
         </div>
-        
+
         <nav className="nav-links">
           <a href="#guild" className="nav-link">The Guild</a>
           <a href="#sectors" className="nav-link">Sectors</a>
@@ -276,7 +277,28 @@ export default function App() {
         </nav>
 
         <a href="#contact" className="nav-cta">Join Community</a>
+
+        <button
+          type="button"
+          className={`mobile-menu-toggle ${mobileMenuOpen ? 'open' : ''}`}
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
+          aria-label="Toggle navigation menu"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
       </header>
+
+      <div className={`mobile-nav-panel ${mobileMenuOpen ? 'open' : ''}`}>
+        <a href="#guild" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">The Guild</a>
+        <a href="#sectors" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Sectors</a>
+        <a href="#workshops" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Workshops</a>
+        <a href="#gallery" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Gallery</a>
+        <a href="#about" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">About</a>
+        <a href="#sandbox" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link">Sandbox</a>
+        <a href="#contact" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-link mobile-nav-cta">Join Community</a>
+      </div>
 
       {/* Hero Section */}
       <section className="section-wrapper hero-wrapper">
