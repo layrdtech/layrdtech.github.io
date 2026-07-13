@@ -1,764 +1,583 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { Cpu, Activity, Play, RefreshCw, Zap, Send } from 'lucide-react'
+import React, { useState, useMemo } from 'react'
+import {
+  Zap, Lightbulb, CircuitBoard, Waves, Timer, Binary, BatteryCharging
+} from 'lucide-react'
 
-// Helper to determine resistor color band representation (4-band: digit1, digit2, multiplier, tolerance)
-const getResistorColorBands = (ohms) => {
-  const code = [
-    { color: 'black', val: 0, bg: '#000000', text: '#fff' },
-    { color: 'brown', val: 1, bg: '#8B4513', text: '#fff' },
-    { color: 'red', val: 2, bg: '#FF0000', text: '#fff' },
-    { color: 'orange', val: 3, bg: '#FFA500', text: '#000' },
-    { color: 'yellow', val: 4, bg: '#FFFF00', text: '#000' },
-    { color: 'green', val: 5, bg: '#008000', text: '#fff' },
-    { color: 'blue', val: 6, bg: '#0000FF', text: '#fff' },
-    { color: 'violet', val: 7, bg: '#EE82EE', text: '#000' },
-    { color: 'gray', val: 8, bg: '#808080', text: '#fff' },
-    { color: 'white', val: 9, bg: '#FFFFFF', text: '#000' }
-  ]
+/* ------------------------------------------------------------------ *
+ * Shared helpers — real engineering math, no simulation.
+ * ------------------------------------------------------------------ */
 
-  let val = ohms
-  let multiplier = 0
-  
-  if (val >= 1000) {
-    val = ohms / 10
-    multiplier = 2 // 10^2
-  } else if (val >= 100) {
-    val = ohms / 10
-    multiplier = 1 // 10^1
-  } else {
-    multiplier = 0 // 10^0
+// E-series (standard preferred values) used to snap to real parts.
+const E12 = [10, 12, 15, 18, 22, 27, 33, 39, 47, 56, 68, 82]
+const E24 = [10, 11, 12, 13, 15, 16, 18, 20, 22, 24, 27, 30, 33, 36, 39, 43, 47, 51, 56, 62, 68, 75, 82, 91]
+
+function nearestESeries(value, series = E24) {
+  if (!isFinite(value) || value <= 0) return null
+  const decade = Math.floor(Math.log10(value))
+  let best = null
+  for (let d = decade - 1; d <= decade + 1; d++) {
+    const mult = Math.pow(10, d)
+    for (const base of series) {
+      const candidate = base * mult
+      if (best === null || Math.abs(candidate - value) < Math.abs(best - value)) {
+        best = candidate
+      }
+    }
   }
-
-  const str = Math.round(val).toString().padStart(2, '0')
-  const digit1 = parseInt(str[0]) || 0
-  const digit2 = parseInt(str[1]) || 0
-
-  const color1 = code.find(c => c.val === digit1) || code[0]
-  const color2 = code.find(c => c.val === digit2) || code[0]
-  const color3 = code.find(c => c.val === multiplier) || code[0]
-  
-  return [
-    { label: color1.color, color: color1.bg, text: color1.text },
-    { label: color2.color, color: color2.bg, text: color2.text },
-    { label: `10^${multiplier}`, color: color3.bg, text: color3.text },
-    { label: 'Gold (5%)', color: '#D4AF37', text: '#000' }
-  ]
+  return best
 }
 
-export default function TechSandbox() {
-  const [activeTab, setActiveTab] = useState('elec') // 'elec', 'ai', 'iot'
+// Format a value with SI prefix + unit (e.g. 1500 Ω -> "1.5 kΩ").
+function si(value, unit = '', digits = 3) {
+  if (value === null || value === undefined || !isFinite(value)) return '—'
+  if (value === 0) return `0 ${unit}`.trim()
+  const prefixes = [
+    { p: 'G', e: 9 }, { p: 'M', e: 6 }, { p: 'k', e: 3 },
+    { p: '', e: 0 }, { p: 'm', e: -3 }, { p: 'µ', e: -6 },
+    { p: 'n', e: -9 }, { p: 'p', e: -12 }
+  ]
+  const abs = Math.abs(value)
+  const chosen = prefixes.find(pr => abs >= Math.pow(10, pr.e)) || prefixes[prefixes.length - 1]
+  const scaled = value / Math.pow(10, chosen.e)
+  const str = parseFloat(scaled.toPrecision(digits)).toString()
+  return `${str} ${chosen.p}${unit}`.trim()
+}
 
-  // --- Electronics Lab Ohm's Law States ---
-  const [voltage, setVoltage] = useState(5)
-  const [resistance, setResistance] = useState(220)
+const num = (v) => {
+  const n = parseFloat(v)
+  return isFinite(n) ? n : NaN
+}
 
-  const current = (voltage / resistance) * 1000 // mA
-  const power = voltage * (current / 1000) // W
-  
-  const ledGlowClass = current < 5 ? 'glow-off' : current >= 5 && current <= 30 ? 'glow-on' : 'glow-danger'
-  const circuitStatusText = current < 5 ? 'LED DIM / OFF' : current >= 5 && current <= 30 ? 'OPTIMAL CURRENT' : 'DANGER: OVERCURRENT'
-  const circuitIndicatorClass = current < 5 ? 'status-indicator offline' : current >= 5 && current <= 30 ? 'status-indicator online' : 'status-indicator alert-fired'
+/* Reusable little primitives ---------------------------------------- */
 
-  const bands = getResistorColorBands(resistance)
+function Field({ label, hint, children }) {
+  return (
+    <label className="lab-field">
+      <span className="lab-field-label">
+        {label}
+        {hint ? <em className="lab-field-hint">{hint}</em> : null}
+      </span>
+      {children}
+    </label>
+  )
+}
 
-  // --- AI Neural Classifier States (REAL 2D Training in React) ---
-  const canvasRef = useRef(null)
-  const [aiTraining, setAiTraining] = useState(false)
-  const [aiEpoch, setAiEpoch] = useState(0)
-  const [modelStats, setModelStats] = useState({ loss: 0.85, accuracy: 0 })
-  const [aiLogs, setAiLogs] = useState(['System Ready. Awaiting training trigger...'])
-  const aiLogEndRef = useRef(null)
+function Readout({ label, value, accent = false, danger = false }) {
+  return (
+    <div className={`lab-readout ${accent ? 'is-accent' : ''} ${danger ? 'is-danger' : ''}`}>
+      <span className="lab-readout-label">{label}</span>
+      <span className="lab-readout-value">{value}</span>
+    </div>
+  )
+}
 
-  // Dataset generation for decision boundary classifier (Circle Classification)
-  const [dataset] = useState(() => {
-    const points = []
-    // Center of circle: (0.5, 0.5)
-    for (let i = 0; i < 40; i++) {
-      const x = 0.1 + Math.random() * 0.8
-      const y = 0.1 + Math.random() * 0.8
-      const dist = Math.sqrt((x - 0.5) ** 2 + (y - 0.5) ** 2)
-      const label = dist < 0.28 ? 1 : 0 // Inside circle = 1, outside = 0
-      points.push({ x, y, label })
-    }
-    return points
-  })
+/* ------------------------------------------------------------------ *
+ * TOOL 1 — Ohm's Law & Power
+ * ------------------------------------------------------------------ */
+function OhmsLaw() {
+  const [v, setV] = useState('5')
+  const [i, setI] = useState('')
+  const [r, setR] = useState('220')
 
-  // Simple classification weights (w1, w2, bias) initialized
-  const weightsRef = useRef({ w1: 0.1, w2: -0.2, bias: 0.05 })
+  const solved = useMemo(() => {
+    let V = num(v), I = num(i), R = num(r)
+    const known = [!isNaN(V), !isNaN(I), !isNaN(R)].filter(Boolean).length
+    if (known < 2) return { error: 'Enter any two values.' }
 
-  useEffect(() => {
-    drawDecisionBoundary()
-  }, [dataset, activeTab])
+    if (!isNaN(V) && !isNaN(I)) R = V / I
+    else if (!isNaN(V) && !isNaN(R)) I = V / R
+    else if (!isNaN(I) && !isNaN(R)) V = I * R
 
-  useEffect(() => {
-    if (aiLogEndRef.current) {
-      aiLogEndRef.current.scrollIntoView({ behavior: 'smooth' })
-    }
-  }, [aiLogs])
+    const P = V * I
+    if (!isFinite(V) || !isFinite(I) || !isFinite(R)) return { error: 'Values produce an undefined result.' }
+    return { V, I, R, P }
+  }, [v, i, r])
 
-  const predict = (x, y, weights) => {
-    // Sigmoid activation
-    const z = x * weights.w1 + y * weights.w2 + weights.bias
-    return 1 / (1 + Math.exp(-z))
+  return (
+    <ToolShell
+      title="Ohm's Law & Power"
+      desc="Enter any two of voltage, current, or resistance — the rest are derived, including power dissipation."
+    >
+      <div className="lab-grid-3">
+        <Field label="Voltage" hint="V"><input className="lab-input" inputMode="decimal" value={v} placeholder="—" onChange={e => setV(e.target.value)} /></Field>
+        <Field label="Current" hint="A"><input className="lab-input" inputMode="decimal" value={i} placeholder="—" onChange={e => setI(e.target.value)} /></Field>
+        <Field label="Resistance" hint="Ω"><input className="lab-input" inputMode="decimal" value={r} placeholder="—" onChange={e => setR(e.target.value)} /></Field>
+      </div>
+
+      {solved.error ? (
+        <div className="lab-note">{solved.error}</div>
+      ) : (
+        <div className="lab-results">
+          <Readout label="Voltage" value={si(solved.V, 'V')} accent />
+          <Readout label="Current" value={si(solved.I, 'A')} accent />
+          <Readout label="Resistance" value={si(solved.R, 'Ω')} accent />
+          <Readout label="Power" value={si(solved.P, 'W')} accent />
+        </div>
+      )}
+      <div className="lab-formula">V = I · R&nbsp;&nbsp;•&nbsp;&nbsp;P = V · I = I²R = V²/R</div>
+    </ToolShell>
+  )
+}
+
+/* ------------------------------------------------------------------ *
+ * TOOL 2 — LED Series Resistor Designer
+ * ------------------------------------------------------------------ */
+function LedResistor() {
+  const [vs, setVs] = useState('5')
+  const [vf, setVf] = useState('2.0')
+  const [mA, setMA] = useState('20')
+
+  const out = useMemo(() => {
+    const Vs = num(vs), Vf = num(vf), If = num(mA) / 1000
+    if ([Vs, Vf, If].some(isNaN)) return { error: 'Fill in every field.' }
+    if (Vf >= Vs) return { error: 'Supply must exceed the LED forward voltage.' }
+    if (If <= 0) return { error: 'LED current must be positive.' }
+    const R = (Vs - Vf) / If
+    const nearest = nearestESeries(R, E12)
+    const actualI = (Vs - Vf) / nearest
+    const P = (Vs - Vf) * If
+    const Pnearest = (Vs - Vf) * actualI
+    const rating = Pnearest <= 0.0625 ? '1/16 W' : Pnearest <= 0.125 ? '1/8 W' : Pnearest <= 0.25 ? '1/4 W' : Pnearest <= 0.5 ? '1/2 W' : '≥ 1 W'
+    return { R, nearest, actualI, P, Pnearest, rating }
+  }, [vs, vf, mA])
+
+  return (
+    <ToolShell
+      title="LED Series Resistor"
+      desc="Size the current-limiting resistor for an LED, snapped to the nearest standard E12 value with a power-rating recommendation."
+    >
+      <div className="lab-grid-3">
+        <Field label="Supply" hint="V"><input className="lab-input" inputMode="decimal" value={vs} onChange={e => setVs(e.target.value)} /></Field>
+        <Field label="LED Vf" hint="V"><input className="lab-input" inputMode="decimal" value={vf} onChange={e => setVf(e.target.value)} /></Field>
+        <Field label="LED current" hint="mA"><input className="lab-input" inputMode="decimal" value={mA} onChange={e => setMA(e.target.value)} /></Field>
+      </div>
+
+      {out.error ? (
+        <div className="lab-note">{out.error}</div>
+      ) : (
+        <div className="lab-results">
+          <Readout label="Ideal resistor" value={si(out.R, 'Ω')} />
+          <Readout label="Nearest E12" value={si(out.nearest, 'Ω')} accent />
+          <Readout label="Actual current" value={si(out.actualI, 'A')} />
+          <Readout label="Min. resistor rating" value={out.rating} accent />
+        </div>
+      )}
+      <div className="lab-formula">R = (V_supply − V_f) / I_LED</div>
+    </ToolShell>
+  )
+}
+
+/* ------------------------------------------------------------------ *
+ * TOOL 3 — Resistor Color Decoder
+ * ------------------------------------------------------------------ */
+const DIGITS = [
+  { name: 'Black', v: 0, hex: '#111114', fg: '#fff' },
+  { name: 'Brown', v: 1, hex: '#7c4a1e', fg: '#fff' },
+  { name: 'Red', v: 2, hex: '#d63b30', fg: '#fff' },
+  { name: 'Orange', v: 3, hex: '#e8862b', fg: '#111' },
+  { name: 'Yellow', v: 4, hex: '#f2d045', fg: '#111' },
+  { name: 'Green', v: 5, hex: '#3fae6b', fg: '#fff' },
+  { name: 'Blue', v: 6, hex: '#3b7dd8', fg: '#fff' },
+  { name: 'Violet', v: 7, hex: '#9b6dd6', fg: '#fff' },
+  { name: 'Grey', v: 8, hex: '#9aa0a6', fg: '#111' },
+  { name: 'White', v: 9, hex: '#f3f3f5', fg: '#111' }
+]
+const MULTS = [
+  ...DIGITS.map(d => ({ ...d, mult: Math.pow(10, d.v), label: `×${si(Math.pow(10, d.v), '')}` })),
+  { name: 'Gold', v: -1, hex: '#c9a227', fg: '#111', mult: 0.1, label: '×0.1' },
+  { name: 'Silver', v: -2, hex: '#b8b8bd', fg: '#111', mult: 0.01, label: '×0.01' }
+]
+const TOLS = [
+  { name: 'Brown', hex: '#7c4a1e', fg: '#fff', tol: 1 },
+  { name: 'Red', hex: '#d63b30', fg: '#fff', tol: 2 },
+  { name: 'Green', hex: '#3fae6b', fg: '#fff', tol: 0.5 },
+  { name: 'Blue', hex: '#3b7dd8', fg: '#fff', tol: 0.25 },
+  { name: 'Violet', hex: '#9b6dd6', fg: '#fff', tol: 0.1 },
+  { name: 'Gold', hex: '#c9a227', fg: '#111', tol: 5 },
+  { name: 'Silver', hex: '#b8b8bd', fg: '#111', tol: 10 }
+]
+
+function BandSelect({ options, value, onChange }) {
+  return (
+    <select className="lab-input lab-select" value={value} onChange={e => onChange(parseInt(e.target.value))}>
+      {options.map((o, idx) => <option key={idx} value={idx}>{o.name}{o.label ? ` (${o.label})` : ''}</option>)}
+    </select>
+  )
+}
+
+function ResistorDecoder() {
+  const [fiveBand, setFiveBand] = useState(false)
+  const [d1, setD1] = useState(2) // red
+  const [d2, setD2] = useState(2) // red
+  const [d3, setD3] = useState(0) // black (5-band only)
+  const [mult, setMult] = useState(1) // brown ×10
+  const [tol, setTol] = useState(5) // gold 5%
+
+  const out = useMemo(() => {
+    const digits = fiveBand
+      ? `${DIGITS[d1].v}${DIGITS[d2].v}${DIGITS[d3].v}`
+      : `${DIGITS[d1].v}${DIGITS[d2].v}`
+    const value = parseInt(digits, 10) * MULTS[mult].mult
+    const tolerance = TOLS[tol].tol
+    const min = value * (1 - tolerance / 100)
+    const max = value * (1 + tolerance / 100)
+    return { value, tolerance, min, max }
+  }, [fiveBand, d1, d2, d3, mult, tol])
+
+  const bandColors = fiveBand
+    ? [DIGITS[d1], DIGITS[d2], DIGITS[d3], MULTS[mult], TOLS[tol]]
+    : [DIGITS[d1], DIGITS[d2], MULTS[mult], TOLS[tol]]
+
+  return (
+    <ToolShell
+      title="Resistor Color Decoder"
+      desc="Read a resistor straight off the bands. Choose 4- or 5-band, set each ring, and get the value plus its tolerance window."
+    >
+      <div className="lab-seg">
+        <button className={!fiveBand ? 'is-active' : ''} onClick={() => setFiveBand(false)}>4-band</button>
+        <button className={fiveBand ? 'is-active' : ''} onClick={() => setFiveBand(true)}>5-band</button>
+      </div>
+
+      {/* Visual resistor */}
+      <div className="resistor-viz">
+        <span className="resistor-lead" />
+        <div className="resistor-body">
+          {bandColors.map((b, idx) => (
+            <span key={idx} className="resistor-band" style={{ background: b.hex }} />
+          ))}
+        </div>
+        <span className="resistor-lead" />
+      </div>
+
+      <div className={fiveBand ? 'lab-grid-5' : 'lab-grid-4'}>
+        <Field label="Digit 1"><BandSelect options={DIGITS} value={d1} onChange={setD1} /></Field>
+        <Field label="Digit 2"><BandSelect options={DIGITS} value={d2} onChange={setD2} /></Field>
+        {fiveBand && <Field label="Digit 3"><BandSelect options={DIGITS} value={d3} onChange={setD3} /></Field>}
+        <Field label="Multiplier"><BandSelect options={MULTS} value={mult} onChange={setMult} /></Field>
+        <Field label="Tolerance"><BandSelect options={TOLS} value={tol} onChange={setTol} /></Field>
+      </div>
+
+      <div className="lab-results">
+        <Readout label="Resistance" value={si(out.value, 'Ω')} accent />
+        <Readout label="Tolerance" value={`± ${out.tolerance}%`} />
+        <Readout label="Min" value={si(out.min, 'Ω')} />
+        <Readout label="Max" value={si(out.max, 'Ω')} />
+      </div>
+    </ToolShell>
+  )
+}
+
+/* ------------------------------------------------------------------ *
+ * TOOL 4 — RC Filter / Time Constant
+ * ------------------------------------------------------------------ */
+const CAP_UNITS = [
+  { label: 'pF', mult: 1e-12 },
+  { label: 'nF', mult: 1e-9 },
+  { label: 'µF', mult: 1e-6 },
+  { label: 'mF', mult: 1e-3 }
+]
+const RES_UNITS = [
+  { label: 'Ω', mult: 1 },
+  { label: 'kΩ', mult: 1e3 },
+  { label: 'MΩ', mult: 1e6 }
+]
+
+function RcFilter() {
+  const [r, setR] = useState('10')
+  const [rU, setRU] = useState(1) // kΩ
+  const [c, setC] = useState('100')
+  const [cU, setCU] = useState(1) // nF
+
+  const out = useMemo(() => {
+    const R = num(r) * RES_UNITS[rU].mult
+    const C = num(c) * CAP_UNITS[cU].mult
+    if ([R, C].some(isNaN) || R <= 0 || C <= 0) return { error: 'Enter positive R and C.' }
+    const tau = R * C
+    const fc = 1 / (2 * Math.PI * R * C)
+    return { tau, fc, settle: 5 * tau }
+  }, [r, rU, c, cU])
+
+  return (
+    <ToolShell
+      title="RC Filter Designer"
+      desc="Time constant and −3 dB cutoff for a resistor–capacitor pair. Works for first-order low/high-pass filters and RC delays."
+    >
+      <div className="lab-grid-2">
+        <Field label="Resistance">
+          <div className="lab-inline">
+            <input className="lab-input" inputMode="decimal" value={r} onChange={e => setR(e.target.value)} />
+            <select className="lab-input lab-select lab-unit" value={rU} onChange={e => setRU(parseInt(e.target.value))}>
+              {RES_UNITS.map((u, idx) => <option key={idx} value={idx}>{u.label}</option>)}
+            </select>
+          </div>
+        </Field>
+        <Field label="Capacitance">
+          <div className="lab-inline">
+            <input className="lab-input" inputMode="decimal" value={c} onChange={e => setC(e.target.value)} />
+            <select className="lab-input lab-select lab-unit" value={cU} onChange={e => setCU(parseInt(e.target.value))}>
+              {CAP_UNITS.map((u, idx) => <option key={idx} value={idx}>{u.label}</option>)}
+            </select>
+          </div>
+        </Field>
+      </div>
+
+      {out.error ? (
+        <div className="lab-note">{out.error}</div>
+      ) : (
+        <div className="lab-results">
+          <Readout label="Time constant τ" value={si(out.tau, 's')} accent />
+          <Readout label="Cutoff frequency" value={si(out.fc, 'Hz')} accent />
+          <Readout label="~Settling (5τ)" value={si(out.settle, 's')} />
+        </div>
+      )}
+      <div className="lab-formula">τ = R · C&nbsp;&nbsp;•&nbsp;&nbsp;f_c = 1 / (2π · R · C)</div>
+    </ToolShell>
+  )
+}
+
+/* ------------------------------------------------------------------ *
+ * TOOL 5 — 555 Astable Timer
+ * ------------------------------------------------------------------ */
+function Timer555() {
+  const [r1, setR1] = useState('1')
+  const [r1U, setR1U] = useState(1) // kΩ
+  const [r2, setR2] = useState('10')
+  const [r2U, setR2U] = useState(1) // kΩ
+  const [c, setC] = useState('10')
+  const [cU, setCU] = useState(2) // µF
+
+  const out = useMemo(() => {
+    const R1 = num(r1) * RES_UNITS[r1U].mult
+    const R2 = num(r2) * RES_UNITS[r2U].mult
+    const C = num(c) * CAP_UNITS[cU].mult
+    if ([R1, R2, C].some(isNaN) || R1 <= 0 || R2 <= 0 || C <= 0) return { error: 'Enter positive R1, R2 and C.' }
+    const tHigh = 0.693 * (R1 + R2) * C
+    const tLow = 0.693 * R2 * C
+    const period = tHigh + tLow
+    const freq = 1 / period
+    const duty = (R1 + R2) / (R1 + 2 * R2) * 100
+    return { freq, duty, tHigh, tLow }
+  }, [r1, r1U, r2, r2U, c, cU])
+
+  const ResRow = (label, val, setVal, unit, setUnit) => (
+    <Field label={label}>
+      <div className="lab-inline">
+        <input className="lab-input" inputMode="decimal" value={val} onChange={e => setVal(e.target.value)} />
+        <select className="lab-input lab-select lab-unit" value={unit} onChange={e => setUnit(parseInt(e.target.value))}>
+          {RES_UNITS.map((u, idx) => <option key={idx} value={idx}>{u.label}</option>)}
+        </select>
+      </div>
+    </Field>
+  )
+
+  return (
+    <ToolShell
+      title="555 Astable Timer"
+      desc="Classic 555 astable oscillator. Set R1, R2 and the timing capacitor to get output frequency and duty cycle."
+    >
+      <div className="lab-grid-3">
+        {ResRow('R1', r1, setR1, r1U, setR1U)}
+        {ResRow('R2', r2, setR2, r2U, setR2U)}
+        <Field label="Capacitor">
+          <div className="lab-inline">
+            <input className="lab-input" inputMode="decimal" value={c} onChange={e => setC(e.target.value)} />
+            <select className="lab-input lab-select lab-unit" value={cU} onChange={e => setCU(parseInt(e.target.value))}>
+              {CAP_UNITS.map((u, idx) => <option key={idx} value={idx}>{u.label}</option>)}
+            </select>
+          </div>
+        </Field>
+      </div>
+
+      {out.error ? (
+        <div className="lab-note">{out.error}</div>
+      ) : (
+        <div className="lab-results">
+          <Readout label="Frequency" value={si(out.freq, 'Hz')} accent />
+          <Readout label="Duty cycle" value={`${out.duty.toFixed(1)} %`} accent />
+          <Readout label="T high" value={si(out.tHigh, 's')} />
+          <Readout label="T low" value={si(out.tLow, 's')} />
+        </div>
+      )}
+      <div className="lab-formula">f = 1.44 / ((R1 + 2·R2)·C)&nbsp;&nbsp;•&nbsp;&nbsp;D = (R1+R2)/(R1+2·R2)</div>
+    </ToolShell>
+  )
+}
+
+/* ------------------------------------------------------------------ *
+ * TOOL 6 — Number Base Converter
+ * ------------------------------------------------------------------ */
+function BaseConverter() {
+  const [value, setValue] = useState(255n)
+  const [error, setError] = useState('')
+  const [width, setWidth] = useState(8)
+
+  const handle = (raw, base) => {
+    const cleaned = raw.trim().replace(/^0x|^0b|^0o/i, '')
+    if (cleaned === '') { setValue(0n); setError(''); return }
+    const valid = { 2: /^[01]+$/, 8: /^[0-7]+$/, 10: /^\d+$/, 16: /^[0-9a-fA-F]+$/ }
+    if (!valid[base].test(cleaned)) { setError(`Invalid base-${base} input.`); return }
+    try {
+      const prefix = { 2: '0b', 8: '0o', 10: '', 16: '0x' }[base]
+      setValue(BigInt(prefix + cleaned))
+      setError('')
+    } catch { setError('Could not parse value.') }
   }
 
-  const drawDecisionBoundary = () => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    const width = canvas.width
-    const height = canvas.height
-    
-    // Draw background boundary prediction grid
-    const scale = 4
-    for (let py = 0; py < height; py += scale) {
-      for (let px = 0; px < width; px += scale) {
-        const x = px / width
-        const y = py / height
-        const pred = predict(x, y, weightsRef.current)
-        
-        // Blend colors based on neural prediction
-        const r = Math.round(pred * 112)
-        const g = Math.round((1 - pred) * 240)
-        const b = Math.round((1 - pred) * 255 + pred * 50)
-        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.22)`
-        ctx.fillRect(px, py, scale, scale)
-      }
-    }
+  const mask = (1n << BigInt(width)) - 1n
+  const masked = value & mask
+  const overflow = value > mask
+  // two's complement interpretation of the masked value
+  const signBit = 1n << BigInt(width - 1)
+  const signed = masked >= signBit ? masked - (1n << BigInt(width)) : masked
 
-    // Draw reference boundary (Circle target boundary)
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)'
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.arc(width / 2, height / 2, 0.28 * width, 0, 2 * Math.PI)
-    ctx.stroke()
+  return (
+    <ToolShell
+      title="Number Base Converter"
+      desc="Convert between decimal, hex, binary and octal — the everyday embedded/register workflow. Includes fixed-width two's-complement."
+    >
+      <div className="lab-grid-2">
+        <Field label="Decimal"><input className="lab-input lab-mono" value={value.toString(10)} onChange={e => handle(e.target.value, 10)} /></Field>
+        <Field label="Hex" hint="0x"><input className="lab-input lab-mono" value={value.toString(16).toUpperCase()} onChange={e => handle(e.target.value, 16)} /></Field>
+        <Field label="Binary" hint="0b"><input className="lab-input lab-mono" value={value.toString(2)} onChange={e => handle(e.target.value, 2)} /></Field>
+        <Field label="Octal" hint="0o"><input className="lab-input lab-mono" value={value.toString(8)} onChange={e => handle(e.target.value, 8)} /></Field>
+      </div>
 
-    // Draw dataset points
-    dataset.forEach(pt => {
-      ctx.beginPath()
-      ctx.arc(pt.x * width, pt.y * height, 5, 0, 2 * Math.PI)
-      
-      if (pt.label === 1) {
-        ctx.fillStyle = '#00f0ff' // Inside (Cyan)
-        ctx.strokeStyle = '#ffffff'
-      } else {
-        ctx.fillStyle = '#7000ff' // Outside (Purple)
-        ctx.strokeStyle = '#3b3d46'
-      }
-      ctx.lineWidth = 1
-      ctx.fill()
-      ctx.stroke()
-    })
-  }
+      {error ? <div className="lab-note">{error}</div> : null}
 
-  const runAiTraining = () => {
-    if (aiTraining) return
-    setAiTraining(false)
-    setAiTraining(true)
-    setAiEpoch(0)
-    setAiLogs([
-      '[INIT] Loaded 40 2D coordinate vectors...',
-      '[INIT] Learning rate set to 0.1 (SGD optimizer)',
-      '[RUN] Core stochastic gradient descent sequence started.'
-    ])
+      <div className="lab-seg lab-seg-wide">
+        {[8, 16, 32, 64].map(w => (
+          <button key={w} className={width === w ? 'is-active' : ''} onClick={() => setWidth(w)}>{w}-bit</button>
+        ))}
+      </div>
 
-    let epoch = 0
-    const lr = 0.1
-    const maxEpochs = 20
+      <div className="lab-results">
+        <Readout label={`Unsigned (${width}-bit)`} value={masked.toString(10)} accent />
+        <Readout label={`Signed (two's comp.)`} value={signed.toString(10)} accent />
+        <Readout label="Overflow?" value={overflow ? 'YES — truncated' : 'No'} danger={overflow} />
+      </div>
+      <div className="lab-mono lab-bits">
+        {masked.toString(2).padStart(width, '0').replace(new RegExp(`(.{4})(?=.)`, 'g'), '$1 ')}
+      </div>
+    </ToolShell>
+  )
+}
 
-    const interval = setInterval(() => {
-      epoch += 1
-      
-      // Perform training step on dataset (Stochastic Gradient Descent)
-      let totalLoss = 0
-      let correct = 0
+/* ------------------------------------------------------------------ *
+ * TOOL 7 — Battery Life Estimator
+ * ------------------------------------------------------------------ */
+function BatteryLife() {
+  const [cap, setCap] = useState('2000')
+  const [load, setLoad] = useState('80')
+  const [eff, setEff] = useState('85')
 
-      dataset.forEach(pt => {
-        const pred = predict(pt.x, pt.y, weightsRef.current)
-        const error = pt.label - pred
-        
-        // Accumulate binary cross-entropy loss
-        totalLoss += error ** 2
+  const out = useMemo(() => {
+    const C = num(cap), I = num(load), E = num(eff) / 100
+    if ([C, I].some(isNaN) || C <= 0 || I <= 0) return { error: 'Enter battery capacity and load current.' }
+    const efficiency = isNaN(E) ? 1 : Math.min(Math.max(E, 0.01), 1)
+    const hours = (C / I) * efficiency
+    const days = hours / 24
+    return { hours, days }
+  }, [cap, load, eff])
 
-        // Weight updates
-        weightsRef.current.w1 += lr * error * pt.x
-        weightsRef.current.w2 += lr * error * pt.y
-        weightsRef.current.bias += lr * error
-
-        const isCorrect = (pred >= 0.5 ? 1 : 0) === pt.label
-        if (isCorrect) correct++
-      })
-
-      const averageLoss = totalLoss / dataset.length
-      const accuracy = correct / dataset.length
-
-      setAiEpoch(epoch)
-      setModelStats({ loss: averageLoss, accuracy })
-      setAiLogs(prev => [
-        ...prev,
-        `Epoch ${epoch}/20 | Loss: ${averageLoss.toFixed(4)} | Accuracy: ${(accuracy * 100).toFixed(1)}%`
-      ])
-
-      drawDecisionBoundary()
-
-      if (epoch >= maxEpochs) {
-        clearInterval(interval)
-        setAiTraining(false)
-        setAiLogs(prev => [
-          ...prev,
-          '[SUCCESS] Weights convergence achieved.',
-          '[DEPLOY] Model weights compiled for hardware serialization.'
-        ])
-      }
-    }, 180)
-  }
-
-  // --- IoT Telemetry & AT Serial Command Hub States ---
-  const [telemetry, setTelemetry] = useState([])
-  const [anomaly, setAnomaly] = useState(false)
-  const [sensorOnline, setSensorOnline] = useState(true)
-  const [activeSensorType, setActiveSensorType] = useState('temp') // 'temp' (DHT11), 'light' (LDR), 'dist' (Ultrasonic)
-  const [cmdInput, setCmdInput] = useState('')
-  const [serialHistory, setSerialHistory] = useState([
-    'LAYRD Edge node serial terminal v1.2',
-    'Type AT commands or click quick nodes below to query firmware.',
-    'Ready.'
-  ])
-  const serialEndRef = useRef(null)
-
-  useEffect(() => {
-    if (serialEndRef.current) {
-      serialEndRef.current.scrollIntoView({ behavior: 'smooth' })
-    }
-  }, [serialHistory])
-
-  useEffect(() => {
-    const baseline = Array.from({ length: 15 }, (_, i) => ({
-      time: i,
-      val: activeSensorType === 'temp' ? 22 + Math.random() * 2 
-         : activeSensorType === 'light' ? 620 + Math.random() * 40
-         : 18 + Math.random() * 5
-    }))
-    setTelemetry(baseline)
-  }, [activeSensorType])
-
-  useEffect(() => {
-    if (!sensorOnline) return
-
-    const interval = setInterval(() => {
-      setTelemetry((prev) => {
-        const nextTime = prev.length ? prev[prev.length - 1].time + 1 : 0
-        let baseVal = 0
-        
-        if (activeSensorType === 'temp') {
-          baseVal = anomaly ? 39 + Math.random() * 4 : 22 + Math.random() * 1.5
-        } else if (activeSensorType === 'light') {
-          baseVal = anomaly ? 120 + Math.random() * 30 : 640 + Math.random() * 30
-        } else {
-          baseVal = anomaly ? 4 + Math.random() * 1.5 : 19 + Math.random() * 3
-        }
-
-        const updated = [...prev, { time: nextTime, val: parseFloat(baseVal.toFixed(2)) }]
-        if (updated.length > 15) {
-          updated.shift()
-        }
-        return updated
-      })
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [sensorOnline, anomaly, activeSensorType])
-
-  const triggerSpike = () => {
-    setAnomaly(true)
-    sendSerialCmd('AT+ANOMALY')
-    setTimeout(() => {
-      setAnomaly(false)
-    }, 4000)
-  }
-
-  const getTelemetryPath = () => {
-    if (telemetry.length < 2) return ''
-    
-    // Bounds adjust based on selected sensor
-    const maxVal = activeSensorType === 'temp' ? 45 : activeSensorType === 'light' ? 800 : 35
-    const minVal = activeSensorType === 'temp' ? 15 : activeSensorType === 'light' ? 100 : 2
-    const width = 360
-    const height = 110
-
-    const points = telemetry.map((t, idx) => {
-      const x = (idx / (telemetry.length - 1)) * width
-      const percentage = (t.val - minVal) / (maxVal - minVal)
-      const y = height - percentage * height
-      return `${x.toFixed(1)},${y.toFixed(1)}`
-    })
-
-    return `M ${points.join(' L ')}`
-  }
-
-  // AT Serial Terminal Command Interpreter
-  const handleSerialSubmit = (e) => {
-    if (e) e.preventDefault()
-    if (!cmdInput.trim()) return
-    const cmd = cmdInput.toUpperCase().trim()
-    setCmdInput('')
-    sendSerialCmd(cmd)
-  }
-
-  const sendSerialCmd = (cmd) => {
-    setSerialHistory(prev => [...prev, `> ${cmd}`])
-    
-    setTimeout(() => {
-      if (!sensorOnline && cmd !== 'AT+CONNECT' && cmd !== 'AT') {
-        setSerialHistory(prev => [...prev, 'ERROR: NODE DISCONNECTED (No response)'])
-        return
-      }
-
-      let response = ''
-      if (cmd === 'AT') {
-        response = 'OK'
-      } else if (cmd === 'AT+CONNECT') {
-        setSensorOnline(true)
-        response = 'OK [Node link online]'
-      } else if (cmd === 'AT+DISCONNECT') {
-        setSensorOnline(false)
-        response = 'OK [Node link terminated]'
-      } else if (cmd === 'AT+STATUS') {
-        response = `+STATUS: ONLINE=1; VOLT=3.3V; SENSOR_TYPE=${activeSensorType.toUpperCase()}`
-      } else if (cmd === 'AT+READ') {
-        const curVal = telemetry.length ? telemetry[telemetry.length - 1].val : 0
-        const unit = activeSensorType === 'temp' ? 'C' : activeSensorType === 'light' ? 'ADC' : 'CM'
-        response = `+READ: ${curVal.toFixed(2)} ${unit}`
-      } else if (cmd === 'AT+ANOMALY') {
-        response = 'OK [Injecting telemetry hardware anomaly]'
-      } else if (cmd.startsWith('AT+SENSOR=')) {
-        const type = cmd.split('=')[1]
-        if (type === 'TEMP' || type === 'LIGHT' || type === 'DIST') {
-          setActiveSensorType(type.toLowerCase())
-          response = `OK [Configured active telemetry stream: ${type}]`
-        } else {
-          response = 'ERROR: INVALID SENSOR PARAM (Use TEMP, LIGHT, or DIST)'
-        }
-      } else {
-        response = `ERROR: COMMAND NOT FOUND (Type AT, AT+STATUS, AT+READ, AT+SENSOR=TEMP|LIGHT|DIST)`
-      }
-      
-      setSerialHistory(prev => [...prev, response])
-    }, 100)
+  const fmtDuration = (h) => {
+    if (!isFinite(h)) return '—'
+    if (h >= 48) return `${(h / 24).toFixed(1)} days`
+    const hh = Math.floor(h)
+    const mm = Math.round((h - hh) * 60)
+    return `${hh} h ${mm} min`
   }
 
   return (
-    <div className="sandbox-card glass-panel" id="tech-sandbox-container">
-      <div className="sandbox-header">
-        <div className="sandbox-indicator">
-          <Activity size={16} className="animated-pulse-icon" />
-          <span>Interactive Next-Gen Tech Lab</span>
+    <ToolShell
+      title="Battery Life Estimator"
+      desc="Runtime for a battery-powered node from pack capacity and average current draw, derated for real-world discharge efficiency."
+    >
+      <div className="lab-grid-3">
+        <Field label="Capacity" hint="mAh"><input className="lab-input" inputMode="decimal" value={cap} onChange={e => setCap(e.target.value)} /></Field>
+        <Field label="Avg. current" hint="mA"><input className="lab-input" inputMode="decimal" value={load} onChange={e => setLoad(e.target.value)} /></Field>
+        <Field label="Efficiency" hint="%"><input className="lab-input" inputMode="decimal" value={eff} onChange={e => setEff(e.target.value)} /></Field>
+      </div>
+
+      {out.error ? (
+        <div className="lab-note">{out.error}</div>
+      ) : (
+        <div className="lab-results">
+          <Readout label="Estimated runtime" value={fmtDuration(out.hours)} accent />
+          <Readout label="In hours" value={`${out.hours.toFixed(1)} h`} />
+          <Readout label="In days" value={`${out.days.toFixed(2)} d`} />
         </div>
-        <h3 className="sandbox-title">Layrd Sandbox Labs</h3>
+      )}
+      <div className="lab-formula">t = (Capacity / Load) · efficiency</div>
+    </ToolShell>
+  )
+}
+
+/* ------------------------------------------------------------------ *
+ * Shared tool wrapper
+ * ------------------------------------------------------------------ */
+function ToolShell({ title, desc, children }) {
+  return (
+    <div className="lab-tool">
+      <div className="lab-tool-head">
+        <h4 className="lab-tool-title">{title}</h4>
+        <p className="lab-tool-desc">{desc}</p>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ *
+ * Toolkit registry + shell
+ * ------------------------------------------------------------------ */
+const TOOLS = [
+  { id: 'ohms', name: "Ohm's Law", tag: 'V · I · R · P', icon: Zap, Comp: OhmsLaw },
+  { id: 'led', name: 'LED Resistor', tag: 'Series resistor', icon: Lightbulb, Comp: LedResistor },
+  { id: 'resistor', name: 'Color Decoder', tag: '4 / 5-band', icon: CircuitBoard, Comp: ResistorDecoder },
+  { id: 'rc', name: 'RC Filter', tag: 'τ · cutoff', icon: Waves, Comp: RcFilter },
+  { id: 'timer', name: '555 Timer', tag: 'Astable', icon: Timer, Comp: Timer555 },
+  { id: 'base', name: 'Base Convert', tag: 'HEX · BIN · DEC', icon: Binary, Comp: BaseConverter },
+  { id: 'battery', name: 'Battery Life', tag: 'Runtime', icon: BatteryCharging, Comp: BatteryLife }
+]
+
+export default function TechSandbox() {
+  const [active, setActive] = useState('ohms')
+  const ActiveComp = TOOLS.find(t => t.id === active).Comp
+
+  return (
+    <div className="lab glass-panel" id="tech-sandbox-container">
+      <div className="lab-header">
+        <span className="lab-eyebrow">Engineering Toolkit</span>
+        <h3 className="lab-heading">Layrd Sandbox</h3>
+        <p className="lab-intro">
+          Real, browser-native calculators engineers reach for daily — no sign-up, no server round-trips.
+          Every result is computed live from the actual formulas.
+        </p>
       </div>
 
-      {/* Tabs */}
-      <div className="sandbox-tabs">
-        <button 
-          className={`sandbox-tab-btn ${activeTab === 'elec' ? 'active' : ''}`}
-          onClick={() => setActiveTab('elec')}
-        >
-          <span>Electronics Lab</span>
-        </button>
-        <button 
-          className={`sandbox-tab-btn ${activeTab === 'ai' ? 'active' : ''}`}
-          onClick={() => setActiveTab('ai')}
-        >
-          <span>AI Networks</span>
-        </button>
-        <button 
-          className={`sandbox-tab-btn ${activeTab === 'iot' ? 'active' : ''}`}
-          onClick={() => setActiveTab('iot')}
-        >
-          <span>Edge Telemetry</span>
-        </button>
-      </div>
-
-      {/* Tab Panels */}
-      <div className="sandbox-panel-content">
-        
-        {/* --- Electronics Panel --- */}
-        {activeTab === 'elec' && (
-          <div className="sandbox-elec-layout">
-            <div>
-              <h4 className="sandbox-panel-title">Ohm's Law Prototyper</h4>
-              <p className="sandbox-panel-desc">
-                Adjust the source voltage and resistor load values. Monitor the resulting circuit current to protect the LED from burning out.
-              </p>
-              
-              <div className="elec-controls-row">
-                <div className="elec-slider-group">
-                  <label className="form-label">Voltage: <span className="font-mono">{voltage.toFixed(1)}</span> V</label>
-                  <input 
-                    type="range" 
-                    min="1" 
-                    max="12" 
-                    step="0.5" 
-                    value={voltage} 
-                    onChange={(e) => setVoltage(parseFloat(e.target.value))}
-                    className="elec-range" 
-                  />
-                </div>
-                <div className="elec-slider-group">
-                  <label className="form-label">Resistance: <span className="font-mono">{resistance}</span> Ω</label>
-                  <input 
-                    type="range" 
-                    min="50" 
-                    max="1000" 
-                    step="10" 
-                    value={resistance} 
-                    onChange={(e) => setResistance(parseInt(e.target.value))}
-                    className="elec-range" 
-                  />
-                </div>
-              </div>
-
-              {/* Dynamic Resistor Color Code display */}
-              <div style={{ marginBottom: '20px' }}>
-                <span className="result-label" style={{ display: 'block', marginBottom: '8px' }}>Resistor Color Bands (4-Band)</span>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  {bands.map((band, idx) => (
-                    <div 
-                      key={idx}
-                      style={{ 
-                        flex: 1, 
-                        background: band.color, 
-                        color: band.text, 
-                        fontSize: '9px',
-                        padding: '4px',
-                        textAlign: 'center', 
-                        borderRadius: '4px',
-                        border: '1px solid rgba(255,255,255,0.06)',
-                        fontFamily: 'monospace'
-                      }}
-                    >
-                      {band.label.toUpperCase()}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="elec-results-box">
-                <div className="elec-result-item">
-                  <span className="result-label">Circuit Current (I)</span>
-                  <span className="result-val font-mono">{current.toFixed(1)} mA</span>
-                </div>
-                <div className="elec-result-item">
-                  <span className="result-label">LED Status</span>
-                  <span className={circuitIndicatorClass}>{circuitStatusText}</span>
-                </div>
-              </div>
-
-              {/* Live Formula computation card */}
-              <div style={{ 
-                marginTop: '15px', 
-                padding: '10px', 
-                background: 'rgba(0,0,0,0.12)', 
-                borderRadius: '6px',
-                fontSize: '11px',
-                color: 'var(--text-gray)',
-                border: '1px solid rgba(255,255,255,0.02)',
-                lineHeight: '1.5'
-              }}>
-                <span className="result-label" style={{ display: 'block', marginBottom: '4px' }}>Formula & Power Dissipation</span>
-                <div>Formula: <strong>I = V / R</strong> ➔ {voltage.toFixed(1)}V / {resistance}Ω = <strong>{current.toFixed(1)} mA</strong></div>
-                <div>Power: <strong>P = V * I</strong> ➔ {voltage.toFixed(1)}V * {(current/1000).toFixed(4)}A = <strong>{power.toFixed(3)} W</strong></div>
-                <div style={{ marginTop: '4px', color: power > 0.25 ? '#ff4b4b' : '#00f0ff' }}>
-                  {power > 0.25 ? '⚠️ WARNING: Power exceeds standard 1/4W resistor rating.' : '✓ Safe under standard 1/4W resistor rating.'}
-                </div>
-              </div>
-            </div>
-
-            <div className="elec-schematic-wrapper">
-              <div className="schematic-board">
-                {/* SVG Circuit Schematic Overlay */}
-                <svg className="schematic-circuit-svg" viewBox="0 0 180 140">
-                  <path d="M 26,65 L 26,20 L 96,20 L 165,20 L 165,65 L 165,120 L 96,120 L 26,120 Z" fill="none" stroke="rgba(255, 255, 255, 0.05)" strokeWidth="2" />
-                  <path 
-                    id="circuit-current-flow" 
-                    d="M 26,65 L 26,20 L 96,20 L 165,20 L 165,65 L 165,120 L 96,120 L 26,120 Z" 
-                    fill="none" 
-                    stroke={current < 5 ? 'rgba(255, 255, 255, 0.08)' : current >= 5 && current <= 30 ? 'var(--primary-glow)' : '#ff4b4b'} 
-                    strokeWidth="1.5" 
-                    strokeDasharray="4, 8" 
-                    style={{ animation: current < 5 ? 'none' : `flowCurrent ${(current < 5 ? 0 : current >= 5 && current <= 30 ? Math.max(0.3, 15 / current) : 0.12).toFixed(2)}s linear infinite` }}
-                  />
-                </svg>
-
-                <div className="schematic-component voltage-source">
-                  <span className="comp-label">VCC</span>
-                  <span className="comp-val">{voltage.toFixed(1)}V</span>
-                </div>
-                <div className="schematic-component resistor">
-                  <span className="comp-label">RES</span>
-                  <span className="comp-val">{resistance}Ω</span>
-                </div>
-                <div className="schematic-component led">
-                  <div className={`led-glow-glow ${ledGlowClass}`}></div>
-                  <span className="comp-label">LED</span>
-                </div>
-                <div className="schematic-component ground">
-                  <span className="comp-label">GND</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* --- AI Panel --- */}
-        {activeTab === 'ai' && (
-          <div className="sandbox-ai-layout">
-            <div className="ai-controls-wrapper">
-              <h4 className="sandbox-panel-title">Decision Boundary Classifier</h4>
-              <p className="sandbox-panel-desc">
-                Tune and train a single-layer perceptron neural network right in your browser. Watch the weights converge to separate Cyan (inside radius) and Purple coordinate nodes.
-              </p>
-
-              <div className="ai-stat-row">
-                <div className="ai-stat-card">
-                  <div className="stat-label">Loss Parameter</div>
-                  <div className="stat-val font-mono">
-                    {modelStats.loss.toFixed(4)}
-                  </div>
-                </div>
-                <div className="ai-stat-card">
-                  <div className="stat-label">Model Accuracy</div>
-                  <div className="stat-val font-mono">
-                    {`${(modelStats.accuracy * 100).toFixed(1)}%`}
-                  </div>
-                </div>
-                <div className="ai-stat-card">
-                  <div className="stat-label">Epoch Cycles</div>
-                  <div className="stat-val font-mono">{aiEpoch}/20</div>
-                </div>
-              </div>
-
-              <button 
-                onClick={runAiTraining}
-                disabled={aiTraining}
-                className="action-btn primary-btn"
+      <div className="lab-body">
+        <nav className="lab-rail" aria-label="Toolkit">
+          {TOOLS.map(t => {
+            const Icon = t.icon
+            return (
+              <button
+                key={t.id}
+                className={`lab-rail-item ${active === t.id ? 'is-active' : ''}`}
+                onClick={() => setActive(t.id)}
               >
-                {aiTraining ? <RefreshCw className="spin-icon" size={16} /> : <Play size={16} />}
-                <span>{aiTraining ? 'Optimizing Weights...' : 'Train Neural Net'}</span>
+                <Icon size={16} className="lab-rail-icon" />
+                <span className="lab-rail-text">
+                  <span className="lab-rail-name">{t.name}</span>
+                  <span className="lab-rail-tag">{t.tag}</span>
+                </span>
               </button>
-            </div>
+            )
+          })}
+        </nav>
 
-            {/* Interactive Decision Boundary Canvas */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{
-                background: 'rgba(0, 0, 0, 0.3)',
-                border: '1px solid rgba(255, 255, 255, 0.05)',
-                borderRadius: '8px',
-                overflow: 'hidden',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '10px'
-              }}>
-                <canvas 
-                  ref={canvasRef} 
-                  width={220} 
-                  height={220} 
-                  style={{ borderRadius: '6px', width: '220px', height: '220px' }}
-                />
-              </div>
-              
-              <div className="ai-terminal-wrapper">
-                <div className="terminal-header">
-                  <span className="dot red"></span>
-                  <span className="dot yellow"></span>
-                  <span className="dot green"></span>
-                  <span className="terminal-title">bash - layrd_ai_engine.sh</span>
-                </div>
-                <div className="terminal-body font-mono">
-                  {aiLogs.map((log, idx) => (
-                    <div key={idx} className="terminal-line">
-                      <span className="terminal-cursor">&gt;</span> {log}
-                    </div>
-                  ))}
-                  <div ref={aiLogEndRef} />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* --- IoT Panel --- */}
-        {activeTab === 'iot' && (
-          <div className="sandbox-iot-layout">
-            <div className="iot-controls">
-              <h4 className="sandbox-panel-title">Edge Telemetry Hub</h4>
-              <p className="sandbox-panel-desc">
-                Plot and check real-time telemetry from remote edge microchips. Query the device using AT serial commands.
-              </p>
-
-              {/* Sensor Selection Buttons */}
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '15px', flexWrap: 'wrap' }}>
-                <button 
-                  onClick={() => { setActiveSensorType('temp'); sendSerialCmd('AT+SENSOR=TEMP'); }}
-                  style={{ fontSize: '10px', padding: '4px 10px' }}
-                  className={`action-btn ${activeSensorType === 'temp' ? 'primary-btn' : ''}`}
-                >
-                  DHT11 (Temp)
-                </button>
-                <button 
-                  onClick={() => { setActiveSensorType('light'); sendSerialCmd('AT+SENSOR=LIGHT'); }}
-                  style={{ fontSize: '10px', padding: '4px 10px' }}
-                  className={`action-btn ${activeSensorType === 'light' ? 'primary-btn' : ''}`}
-                >
-                  LDR (Photocell)
-                </button>
-                <button 
-                  onClick={() => { setActiveSensorType('dist'); sendSerialCmd('AT+SENSOR=DIST'); }}
-                  style={{ fontSize: '10px', padding: '4px 10px' }}
-                  className={`action-btn ${activeSensorType === 'dist' ? 'primary-btn' : ''}`}
-                >
-                  Ultrasonic
-                </button>
-              </div>
-
-              <div className="iot-node-status-row">
-                <div className="node-status-tile">
-                  <span className="tile-label">Node Status</span>
-                  <span className={`status-indicator ${sensorOnline ? 'online' : 'offline'}`}>
-                    {sensorOnline ? 'ONLINE' : 'OFFLINE'}
-                  </span>
-                </div>
-                <div className="node-status-tile">
-                  <span className="tile-label">Last Reading</span>
-                  <span className="font-mono text-white text-lg">
-                    {telemetry.length && sensorOnline ? (
-                      activeSensorType === 'temp' ? `${telemetry[telemetry.length - 1].val.toFixed(1)} °C`
-                      : activeSensorType === 'light' ? `${Math.round(telemetry[telemetry.length - 1].val)} ADC`
-                      : `${telemetry[telemetry.length - 1].val.toFixed(1)} CM`
-                    ) : 'N/A'}
-                  </span>
-                </div>
-                <div className="node-status-tile">
-                  <span className="tile-label">Packet Alert</span>
-                  <span className={`status-indicator ${anomaly ? 'alert-fired' : 'stable'}`}>
-                    {anomaly ? 'ANOMALY DETECTED' : 'NOMINAL'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="iot-actions">
-                <button 
-                  onClick={() => {
-                    const online = !sensorOnline;
-                    sendSerialCmd(online ? 'AT+CONNECT' : 'AT+DISCONNECT');
-                  }} 
-                  className={`action-btn ${sensorOnline ? 'secondary-btn' : 'primary-btn'}`}
-                >
-                  {sensorOnline ? 'Disconnect Node' : 'Connect Node'}
-                </button>
-
-                <button 
-                  onClick={triggerSpike}
-                  disabled={!sensorOnline || anomaly}
-                  className="action-btn warning-btn"
-                >
-                  <Zap size={14} />
-                  <span>Simulate Spike</span>
-                </button>
-              </div>
-            </div>
-
-            {/* IoT Real-Time Graph and Serial Console */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div className="iot-graph-card">
-                <div className="graph-header font-mono">
-                  <span>telemetry_stream_v2.log</span>
-                  <span className="blink-green-dot"></span>
-                </div>
-                <div className="graph-body">
-                  {sensorOnline && telemetry.length > 1 ? (
-                    <svg className="telemetry-svg" viewBox="0 0 360 110">
-                      <path 
-                        d={getTelemetryPath()} 
-                        fill="none" 
-                        stroke={anomaly ? "#ff3e3e" : "#00f0ff"} 
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                      />
-                      {telemetry.length && (
-                        <path 
-                          d={`${getTelemetryPath()} L 360,110 L 0,110 Z`} 
-                          fill={anomaly ? "rgba(255, 62, 62, 0.05)" : "rgba(0, 240, 255, 0.05)"}
-                        />
-                      )}
-                    </svg>
-                  ) : (
-                    <div className="graph-offline-mask">
-                      <span>CONNECTION LINK DOWN</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* AT Serial Terminal Terminal */}
-              <div className="ai-terminal-wrapper" style={{ height: '140px' }}>
-                <div className="terminal-header" style={{ justifyContent: 'space-between' }}>
-                  <span className="terminal-title">Serial AT Command Console</span>
-                  <span style={{ fontSize: '7px', color: 'var(--text-dark)' }}>COM4 // 115200 BAUD</span>
-                </div>
-                <div className="terminal-body font-mono" style={{ fontSize: '9px', padding: '6px' }}>
-                  {serialHistory.map((line, idx) => (
-                    <div key={idx} className="terminal-line" style={{ marginBottom: '2px' }}>
-                      {line}
-                    </div>
-                  ))}
-                  <div ref={serialEndRef} />
-                </div>
-                <form 
-                  onSubmit={handleSerialSubmit} 
-                  style={{ 
-                    display: 'flex', 
-                    borderTop: '1px solid rgba(255,255,255,0.04)',
-                    background: 'rgba(0,0,0,0.1)' 
-                  }}
-                >
-                  <input 
-                    type="text"
-                    value={cmdInput}
-                    onChange={(e) => setCmdInput(e.target.value)}
-                    placeholder="Type AT command (e.g. AT, AT+STATUS, AT+READ)..."
-                    style={{ 
-                      flex: 1, 
-                      background: 'transparent',
-                      border: 'none', 
-                      color: '#fff',
-                      fontSize: '9px',
-                      fontFamily: 'monospace',
-                      padding: '6px 10px',
-                      outline: 'none'
-                    }}
-                  />
-                  <button 
-                    type="submit"
-                    style={{ 
-                      background: 'transparent', 
-                      border: 'none', 
-                      color: 'var(--text-gray)',
-                      padding: '0 10px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center'
-                    }}
-                  >
-                    <Send size={10} />
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        )}
-        
+        <div className="lab-stage">
+          <ActiveComp />
+        </div>
       </div>
     </div>
   )

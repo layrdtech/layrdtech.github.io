@@ -535,13 +535,20 @@ export default function App() {
 
       {/* Tech Sandbox */}
       <section className="section-wrapper reveal-on-scroll" id="sandbox">
+        <div className="section-header">
+          <span className="section-label">06 // Toolkit</span>
+          <h2 className="section-title">The Engineering Sandbox</h2>
+          <p>
+            A set of real, no-nonsense calculators our members use on the bench — from sizing an LED resistor to decoding registers. Everything runs live in your browser.
+          </p>
+        </div>
         <TechSandbox />
       </section>
 
       {/* Connect Form */}
       <section className="section-wrapper reveal-on-scroll" id="contact">
         <div className="section-header">
-          <span className="section-label">06 // Connect</span>
+          <span className="section-label">07 // Connect</span>
           <h2 className="section-title">Join the Guild</h2>
           <p>Don't wait for graduation. The world is built by people who didn't wait for permission. Apply to join our active peer network and start engineering your first product.</p>
         </div>
