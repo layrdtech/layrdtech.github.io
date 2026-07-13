@@ -694,24 +694,35 @@ p {
 .mobile-menu-toggle {
   display: none;
   flex-direction: column;
-  gap: 4px;
-  border: none;
-  background: transparent;
-  padding: 6px;
+  gap: 5px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  background: var(--glass-bg-soft);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  padding: 0;
   align-items: center;
   justify-content: center;
+  box-shadow: var(--glass-highlight);
+  transition: border-color 0.25s ease, background 0.25s ease;
 }
 
+.mobile-menu-toggle:active { border-color: var(--glass-border-hover); }
+
 .mobile-menu-toggle span {
-  width: 20px;
-  height: 1.6px;
+  width: 18px;
+  height: 2px;
   border-radius: 999px;
   background: var(--text-white);
   transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
+.mobile-menu-toggle.open { background: linear-gradient(135deg, rgba(56, 240, 255, 0.14), rgba(139, 92, 255, 0.12)); }
+
 .mobile-menu-toggle.open span:nth-child(1) {
-  transform: translateY(6px) rotate(45deg);
+  transform: translateY(7px) rotate(45deg);
 }
 
 .mobile-menu-toggle.open span:nth-child(2) {
@@ -719,7 +730,7 @@ p {
 }
 
 .mobile-menu-toggle.open span:nth-child(3) {
-  transform: translateY(-6px) rotate(-45deg);
+  transform: translateY(-7px) rotate(-45deg);
 }
 
 .mobile-nav-panel {
@@ -2457,8 +2468,13 @@ p {
     padding: 12px;
     gap: 6px;
     scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 16px, #000 calc(100% - 24px), transparent 100%);
   }
   .lab-rail::-webkit-scrollbar { display: none; }
+  .lab-rail-item { scroll-snap-align: start; }
 
   .lab-rail-item {
     flex-direction: column;
@@ -2810,19 +2826,24 @@ p {
 @media (max-width: 768px) {
   .hero-wrapper { padding-top: 96px; min-height: auto; }
   .hero-stats {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px 16px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px 10px;
     margin-top: 32px;
     width: 100%;
-    max-width: 340px;
+    max-width: 400px;
     margin-left: auto;
     margin-right: auto;
   }
-  .hero-stat { align-items: center; }
+  .hero-stat { align-items: center; text-align: center; }
+  .hero-stat-label { font-size: 0.58rem; }
   .hero-graphic-block { order: -1; }
   .section-wrapper { padding: 64px 18px; }
   .founder-info-block { text-align: center; }
   .founder-info-block .section-label { display: block; }
+  /* Late-winning rule: base .mobile-menu-toggle{display:none} appears after the
+     original media query, so re-assert the mobile display here so it actually shows. */
+  .mobile-menu-toggle { display: inline-flex; }
+  .nav-links, .nav-cta { display: none; }
 }
 
 @media (max-width: 480px) {
