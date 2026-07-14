@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
     
     <!-- Stylesheet -->
-    <link rel="stylesheet" crossorigin href="/assets/index-CWoblkK1.css">
+    <link rel="stylesheet" crossorigin href="/assets/index-CH2xAbi3.css">
   </head>
   <body>
     <!-- BACKGROUND VIDEO PLAYER -->
@@ -1407,6 +1407,11 @@
               <div class="agc-name">DEBUG PROTOCOL</div>
               <div class="agc-desc">Bugs are crawling the mainboard. Pinch, click, or tap to debug them — critical bugs are worth more.</div>
             </div>
+            <div class="arcade-game-card" data-game="short" role="button" tabindex="0">
+              <div class="agc-emoji">💡🔍</div>
+              <div class="agc-name">FAULT FINDER</div>
+              <div class="agc-desc">One branch is shorted and its LED won't blink. Trace the circuit and tap the faulty line.</div>
+            </div>
           </div>
 
           <div class="arcade-row-label">DIFFICULTY</div>
@@ -1962,9 +1967,9 @@
         const fxChip = document.getElementById('arcade-fx');
 
         const DIFF = {
-          easy:   { spawnMs: 950, fall: 2.0, bugs: 3, bugSpeed: 1.0 },
-          normal: { spawnMs: 650, fall: 2.8, bugs: 5, bugSpeed: 1.6 },
-          hard:   { spawnMs: 430, fall: 3.8, bugs: 7, bugSpeed: 2.3 }
+          easy:   { spawnMs: 950, fall: 2.0, bugs: 3, bugSpeed: 1.0, branches: 4, sparkMs: 1400 },
+          normal: { spawnMs: 650, fall: 2.8, bugs: 5, bugSpeed: 1.6, branches: 5, sparkMs: 2300 },
+          hard:   { spawnMs: 430, fall: 3.8, bugs: 7, bugSpeed: 2.3, branches: 7, sparkMs: 3400 }
         };
         const GAME_TIME = 45;
         // Circuit Builder: complete circuits by catching the next node in
@@ -1991,6 +1996,8 @@
         let circuitIdx = 0;      // next node needed in the circuit
         let circuitsDone = 0;
         let traces = [];         // decorative PCB traces for Debug Protocol
+        let branches = [];       // ladder circuit for Fault Finder
+        let shortsFound = 0;
         const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
 
         const bestKey = () => `arcade-best-${game}-${diff}`;
@@ -2149,10 +2156,11 @@
         }
 
         function drawTraces() {
+          const t = performance.now();
           ctx.strokeStyle = 'rgba(0, 240, 255, 0.09)';
           ctx.fillStyle = 'rgba(0, 240, 255, 0.16)';
           ctx.lineWidth = 1.5 * dpr;
-          traces.forEach(pts => {
+          traces.forEach((pts, ti) => {
             ctx.beginPath();
             pts.forEach((p, i) => i ? ctx.lineTo(p.x * dpr, p.y * dpr) : ctx.moveTo(p.x * dpr, p.y * dpr));
             ctx.stroke();
@@ -2161,6 +2169,15 @@
               ctx.arc(p.x * dpr, p.y * dpr, 3 * dpr, 0, Math.PI * 2);
               ctx.fill();
             });
+            // status LED blinking at the end of each trace
+            const end = pts[pts.length - 1];
+            if (Math.sin(t / 420 + ti * 1.7) > 0.1) {
+              ctx.beginPath();
+              ctx.arc(end.x * dpr, end.y * dpr, 4.5 * dpr, 0, Math.PI * 2);
+              ctx.fillStyle = ti % 3 === 0 ? 'rgba(140, 255, 120, 0.75)' : 'rgba(0, 240, 255, 0.7)';
+              ctx.fill();
+              ctx.fillStyle = 'rgba(0, 240, 255, 0.16)';
+            }
           });
         }
 
@@ -2246,8 +2263,147 @@
           }
         }
 
+        // ----- FAULT FINDER -----
+        function makeFaultCircuit(w, h) {
+          const n = DIFF[diff].branches;
+          const busX = 64, ledX = w - 78;
+          const top = 46, bottom = h - 30;
+          const shortIdx = (Math.random() * n) | 0;
+          branches = [];
+          for (let i = 0; i < n; i++) {
+            const y = top + (i + 0.5) * ((bottom - top) / n);
+            branches.push({
+              y,
+              busX, ledX,
+              resX: busX + (ledX - busX) * (0.3 + Math.random() * 0.35),
+              phase: Math.random() * 6,
+              blinkMs: 500 + Math.random() * 400,
+              shorted: i === shortIdx,
+              shortX: busX + 50 + Math.random() * (ledX - busX - 140)
+            });
+          }
+        }
+
+        function drawResistor(x, y) {
+          // zigzag resistor symbol
+          ctx.beginPath();
+          ctx.moveTo((x - 22) * dpr, y * dpr);
+          for (let z = 0; z < 6; z++) {
+            ctx.lineTo((x - 15 + z * 6) * dpr, (y + (z % 2 === 0 ? -7 : 7)) * dpr);
+          }
+          ctx.lineTo((x + 22) * dpr, y * dpr);
+          ctx.stroke();
+        }
+
+        function updateShort(dt, w, h) {
+          const t = performance.now();
+          const busX = branches[0].busX, ledX = branches[0].ledX;
+          const top = branches[0].y - 20, bottom = branches[branches.length - 1].y + 20;
+
+          // power bus + battery symbol
+          ctx.strokeStyle = 'rgba(0, 240, 255, 0.55)';
+          ctx.lineWidth = 2 * dpr;
+          ctx.beginPath();
+          ctx.moveTo(busX * dpr, top * dpr);
+          ctx.lineTo(busX * dpr, bottom * dpr);
+          ctx.stroke();
+          const bY = (top + bottom) / 2;
+          ctx.lineWidth = 3 * dpr;
+          ctx.beginPath(); // long plate (+)
+          ctx.moveTo((busX - 26) * dpr, (bY - 12) * dpr);
+          ctx.lineTo((busX - 26) * dpr, (bY + 12) * dpr);
+          ctx.stroke();
+          ctx.lineWidth = 6 * dpr;
+          ctx.beginPath(); // short plate (-)
+          ctx.moveTo((busX - 36) * dpr, (bY - 6) * dpr);
+          ctx.lineTo((busX - 36) * dpr, (bY + 6) * dpr);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.lineWidth = 2 * dpr;
+          ctx.moveTo((busX - 26) * dpr, bY * dpr);
+          ctx.lineTo(busX * dpr, bY * dpr);
+          ctx.stroke();
+          ctx.font = `${11 * dpr}px monospace`;
+          ctx.fillStyle = 'rgba(0,240,255,0.7)';
+          ctx.textAlign = 'center';
+          ctx.fillText('12V', (busX - 31) * dpr, (bY - 20) * dpr);
+
+          branches.forEach(b => {
+            const lit = !b.shorted && Math.sin(t / b.blinkMs + b.phase) > -0.25;
+
+            // branch wire + resistor
+            ctx.strokeStyle = b.shorted
+              ? 'rgba(255, 255, 255, 0.28)'
+              : 'rgba(0, 240, 255, 0.4)';
+            ctx.lineWidth = 1.6 * dpr;
+            ctx.beginPath();
+            ctx.moveTo(busX * dpr, b.y * dpr);
+            ctx.lineTo((b.resX - 22) * dpr, b.y * dpr);
+            ctx.moveTo((b.resX + 22) * dpr, b.y * dpr);
+            ctx.lineTo(ledX * dpr, b.y * dpr);
+            ctx.stroke();
+            drawResistor(b.resX, b.y);
+
+            // LED: blinks on healthy branches, dead on the shorted one
+            if (lit) {
+              const glow = ctx.createRadialGradient(ledX * dpr, b.y * dpr, 0, ledX * dpr, b.y * dpr, 18 * dpr);
+              glow.addColorStop(0, 'rgba(140, 255, 120, 0.9)');
+              glow.addColorStop(1, 'rgba(140, 255, 120, 0)');
+              ctx.fillStyle = glow;
+              ctx.beginPath();
+              ctx.arc(ledX * dpr, b.y * dpr, 18 * dpr, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = 'rgba(190, 255, 170, 1)';
+            } else {
+              ctx.fillStyle = 'rgba(90, 100, 95, 0.5)';
+            }
+            ctx.beginPath();
+            ctx.arc(ledX * dpr, b.y * dpr, 6 * dpr, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 1 * dpr;
+            ctx.stroke();
+
+            // the tell-tale: a brief spark at the short point
+            if (b.shorted && (t % DIFF[diff].sparkMs) < 130) {
+              ctx.font = `${13 * dpr}px serif`;
+              ctx.fillText('⚡', b.shortX * dpr, (b.y - 4 + Math.random() * 6) * dpr);
+              spawnSparks(b.shortX, b.y, '255,200,60', 2);
+            }
+          });
+
+          ctx.font = `${11 * dpr}px 'Space Grotesk', monospace`;
+          ctx.fillStyle = 'rgba(255,255,255,0.45)';
+          ctx.fillText('FIND THE SHORTED BRANCH — ITS LED IS DEAD', (w / 2) * dpr, 16 * dpr);
+        }
+
+        function shortClickAt(clientX, clientY) {
+          const c = toCanvasXY(clientX, clientY);
+          let best = null, bestDy = 24;
+          branches.forEach(b => {
+            const dy = Math.abs(c.y - b.y);
+            if (dy < bestDy && c.x > b.busX - 20 && c.x < b.ledX + 30) { best = b; bestDy = dy; }
+          });
+          if (!best) return;
+          if (best.shorted) {
+            shortsFound++;
+            score += 50;
+            spawnSparks(best.shortX, best.y, '255,200,60', 26);
+            addPopup(best.shortX, best.y - 14, '+50 SHORT ISOLATED', '#ffd23c');
+            window.__fx?.burst(clientX, clientY);
+            window.__layrd?.speak('Short circuit isolated. Board repaired.');
+            makeFaultCircuit(canvas.width / dpr, canvas.height / dpr);
+          } else {
+            score = Math.max(0, score - 10);
+            addPopup(c.x, c.y - 12, '-10 NO FAULT HERE', '#ff5470');
+            shake = 6;
+          }
+        }
+
         canvas.addEventListener('click', (e) => {
-          if (screen === 'playing' && game === 'zap') zapAt(e.clientX, e.clientY);
+          if (screen !== 'playing') return;
+          if (game === 'zap') zapAt(e.clientX, e.clientY);
+          else if (game === 'short') shortClickAt(e.clientX, e.clientY);
         });
 
         // ----- SHARED LOOP -----
@@ -2269,6 +2425,7 @@
           }
 
           if (game === 'catch') updateCatch(dt, w, h);
+          else if (game === 'short') updateShort(dt, w, h);
           else updateZap(dt, w, h);
 
           // sparks
@@ -2309,15 +2466,18 @@
           show(stageEl);
           items = []; bugs = []; sparks = []; popups = [];
           score = 0; combo = 0; timeLeft = GAME_TIME; shake = 0;
-          circuitIdx = 0; circuitsDone = 0;
+          circuitIdx = 0; circuitsDone = 0; shortsFound = 0;
           lastSpawn = 0; lastTick = performance.now();
           resizeCanvas();
           trayX = canvas.width / dpr / 2;
           makeTraces(canvas.width / dpr, canvas.height / dpr);
+          makeFaultCircuit(canvas.width / dpr, canvas.height / dpr);
           bestEl.textContent = 'BEST ' + getBest();
           window.__layrd?.speak(game === 'catch'
             ? 'Circuit builder initialized. Assemble power, conductor, load.'
-            : 'Debug protocol armed. Clear the mainboard.');
+            : game === 'short'
+              ? 'Fault finder online. One branch is shorted. Locate it.'
+              : 'Debug protocol armed. Clear the mainboard.');
           rafId = requestAnimationFrame(loop);
         }
 
@@ -2327,11 +2487,15 @@
           const best = Math.max(getBest(), score);
           localStorage.setItem(bestKey(), best);
           overScoreEl.textContent = score;
-          overBestEl.textContent = 'BEST ' + best + (game === 'catch' ? ' • CIRCUITS ' + circuitsDone : '');
+          overBestEl.textContent = 'BEST ' + best
+            + (game === 'catch' ? ' • CIRCUITS ' + circuitsDone : '')
+            + (game === 'short' ? ' • SHORTS ' + shortsFound : '');
           show(overEl);
           window.__layrd?.speak(game === 'catch'
             ? `Session complete. ${score} points, ${circuitsDone} circuits assembled.`
-            : `Session complete. ${score} points.`);
+            : game === 'short'
+              ? `Session complete. ${shortsFound} shorts isolated.`
+              : `Session complete. ${score} points.`);
         }
 
         function openModal() {
