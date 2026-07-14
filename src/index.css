@@ -3013,9 +3013,40 @@ body.palm-grabbing .custom-cursor-ring {
   transform: translate(-50%, -50%) scale(1.4);
 }
 
-/* Palm control needs a mouse-style viewport — hide on touch devices */
-@media (max-width: 768px), (pointer: coarse) {
-  .palm-control-btn, .palm-panel { display: none; }
+/* Mobile layout: sit above the audio button, compact preview panel */
+@media (max-width: 768px) {
+  .palm-control-btn {
+    bottom: 72px;
+    right: 18px;
+    width: 42px;
+    height: 42px;
+  }
+
+  .palm-panel {
+    bottom: 72px;
+    right: 68px;
+    width: 148px;
+  }
+
+  .palm-video {
+    height: 96px;
+  }
+
+  .palm-hints {
+    font-size: 0.52rem;
+  }
+
+  /* Palm mode drives the cursor on touch devices too — make it prominent */
+  body.palm-active .custom-cursor-core {
+    width: 14px;
+    height: 14px;
+  }
+
+  body.palm-active .custom-cursor-ring {
+    width: 26px;
+    height: 26px;
+    border-color: rgba(0, 240, 255, 0.5);
+  }
 }
 
 /* Gesture guide overlay — shown when palm mode activates */
@@ -3147,6 +3178,58 @@ body.palm-grabbing .custom-cursor-ring {
   transform: translate(-50%, 0);
 }
 
-@media (max-width: 768px), (pointer: coarse) {
-  .palm-guide, .palm-toast { display: none; }
+/* Mobile: stack gesture cards horizontally-compact, let toast wrap */
+@media (max-width: 768px) {
+  .palm-guide-inner {
+    padding: 0 18px;
+    width: 100%;
+  }
+
+  .palm-guide-title {
+    font-size: 1rem;
+    letter-spacing: 0.14em;
+  }
+
+  .palm-guide-sub {
+    font-size: 0.7rem;
+  }
+
+  .palm-guide-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 18px;
+    max-width: 320px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .palm-guide-card {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    grid-template-areas:
+      "emoji name"
+      "emoji desc";
+    align-items: center;
+    text-align: left;
+    column-gap: 12px;
+    padding: 12px 14px;
+  }
+
+  .palm-guide-emoji { grid-area: emoji; font-size: 1.6rem; }
+  .palm-guide-name  { grid-area: name; margin-top: 0; }
+  .palm-guide-desc  { grid-area: desc; margin-top: 2px; }
+
+  .palm-guide-dismiss {
+    margin-top: 16px;
+    font-size: 0.55rem;
+  }
+
+  .palm-toast {
+    top: 72px;
+    max-width: calc(100vw - 32px);
+    white-space: normal;
+    text-align: center;
+    font-size: 0.62rem;
+    padding: 8px 16px;
+  }
 }
