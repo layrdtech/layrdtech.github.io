@@ -16,23 +16,8 @@
     
     <!-- Stylesheet -->
     <link rel="stylesheet" href="./src/index.css" />
-    <style>
-      #matrix-canvas {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 3;
-        pointer-events: none;
-        opacity: 1.0;
-      }
-    </style>
   </head>
   <body>
-    <!-- MATRIX WORDS BACKGROUND FLOW -->
-    <canvas id="matrix-canvas"></canvas>
-
     <!-- BACKGROUND VIDEO PLAYER -->
     <video autoplay muted loop playsinline preload="auto" class="bg-video">
       <source src="./public/background.mp4" type="video/mp4" />
@@ -1434,77 +1419,6 @@
           svgPlay.style.display = 'none';
         }
       });
-
-      // 9. MATRIX DIGITAL RAIN EFFECT
-      const matrixCanvas = document.getElementById('matrix-canvas');
-      if (matrixCanvas) {
-        const ctx = matrixCanvas.getContext('2d');
-        
-        function resizeMatrix() {
-          matrixCanvas.width = window.innerWidth;
-          matrixCanvas.height = window.innerHeight;
-        }
-        resizeMatrix();
-        window.addEventListener('resize', resizeMatrix);
-
-        // Binary, mathematical & engineering symbols
-        const chars = "0101100101101011λ∫ΩΔφABCDEFGHIJKLMNOPQRSTUVWXYZ<>[]{}*+-/".split("");
-        const fontSize = 14;
-        let columns = Math.floor(matrixCanvas.width / fontSize) + 1;
-        let rainDrops = Array(columns).fill(1);
-
-        window.addEventListener('resize', () => {
-          columns = Math.floor(matrixCanvas.width / fontSize) + 1;
-          const oldLen = rainDrops.length;
-          if (columns > oldLen) {
-            rainDrops.push(...Array(columns - oldLen).fill(1));
-          }
-        });
-
-        function drawMatrix() {
-          ctx.clearRect(0, 0, matrixCanvas.width, matrixCanvas.height);
-          ctx.font = fontSize + 'px monospace';
-
-          for (let i = 0; i < rainDrops.length; i++) {
-            const headY = rainDrops[i];
-
-            // Render head and its trailing 12 characters with decreasing opacities
-            for (let j = 0; j < 12; j++) {
-              const yIndex = headY - j;
-              if (yIndex < 0) continue;
-
-              const y = yIndex * fontSize;
-              const opacity = (1 - j / 12) * 0.28; // Subtle brand blend
-
-              const char = chars[Math.floor(Math.random() * chars.length)];
-              const x = i * fontSize;
-
-              if (j === 0 && Math.random() > 0.3) {
-                // Leading head drop: glowing white
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-              } else {
-                // Alternating Cyan and Purple brand streams
-                if (i % 3 === 0) {
-                  ctx.fillStyle = `rgba(112, 0, 255, ${opacity})`;
-                } else {
-                  ctx.fillStyle = `rgba(0, 240, 255, ${opacity})`;
-                }
-              }
-
-              ctx.fillText(char, x, y);
-            }
-
-            // Move the stream head downwards
-            if (headY * fontSize > matrixCanvas.height && Math.random() > 0.975) {
-              rainDrops[i] = 0;
-            } else {
-              rainDrops[i]++;
-            }
-          }
-        }
-
-        setInterval(drawMatrix, 33);
-      }
     </script>
 
     <!-- 10. PALM VISION CURSOR CONTROL (MediaPipe Hand Landmarker) -->

@@ -969,8 +969,7 @@ p {
   .bg-ambient-grid,
   .ambient-glow-sphere,
   .custom-cursor-core,
-  .custom-cursor-ring,
-  #matrix-canvas {
+  .custom-cursor-ring {
     pointer-events: none !important;
     touch-action: none !important;
   }
@@ -1966,12 +1965,6 @@ p {
   0% { transform: scale(0.9); opacity: 0.5; }
   50% { transform: scale(1.15); opacity: 1; }
   100% { transform: scale(0.9); opacity: 0.5; }
-}
-
-/* MATRIX BLUR FILTER & GLOW EFFECTS */
-#matrix-canvas {
-  filter: blur(1.1px) drop-shadow(0 0 4px rgba(0, 240, 255, 0.15));
-  -webkit-filter: blur(1.1px);
 }
 
 /* RESPONSIVE DESIGN OVERRIDES FOR MOBILE DEVICES (PREVENT CLIPPING) */
