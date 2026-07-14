@@ -1327,10 +1327,12 @@
     <div id="palm-panel" class="palm-panel">
       <video id="palm-video" class="palm-video" autoplay playsinline muted></video>
       <div id="palm-status" class="palm-status">INITIALIZING…</div>
+      <div id="palm-debug" class="palm-debug">—</div>
       <div class="palm-hints">
         <span>✋ MOVE — cursor</span>
         <span>🤏 PINCH — click</span>
         <span>🤏 PINCH + drag — scroll</span>
+        <span>⬆⬇ HOLD at screen edge — scroll</span>
       </div>
     </div>
 
@@ -1354,6 +1356,11 @@
             <div class="palm-guide-emoji">🤏</div>
             <div class="palm-guide-name">PINCH + DRAG</div>
             <div class="palm-guide-desc">Hold the pinch and move up / down to scroll</div>
+          </div>
+          <div class="palm-guide-card">
+            <div class="palm-guide-emoji">⬆⬇</div>
+            <div class="palm-guide-name">EDGE SCROLL</div>
+            <div class="palm-guide-desc">Hold the cursor at the top or bottom edge of the screen to scroll</div>
           </div>
         </div>
         <div class="palm-guide-dismiss">Guide closes automatically when your hand is detected</div>
@@ -1428,6 +1435,7 @@
         const palmPanel = document.getElementById('palm-panel');
         const palmVideo = document.getElementById('palm-video');
         const palmStatus = document.getElementById('palm-status');
+        const palmDebug = document.getElementById('palm-debug');
         const palmGuide = document.getElementById('palm-guide');
         const palmToast = document.getElementById('palm-toast');
         if (!palmBtn) return;
@@ -1485,6 +1493,12 @@
 
         const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
+        // Scrolls whichever element the browser actually uses for page scroll
+        function pageScroll(delta) {
+          const el = document.scrollingElement || document.documentElement;
+          el.scrollTop += delta;
+        }
+
         function emitPointer(x, y) {
           x = Math.min(Math.max(x, 1), window.innerWidth - 2);
           y = Math.min(Math.max(y, 1), window.innerHeight - 2);
@@ -1533,7 +1547,7 @@
           // PINCH state machine: thumb tip ↔ index tip, with hysteresis.
           // Release without moving = click; hold and drag = scroll.
           const pinch = dist(lm[4], lm[8]) / scale;
-          const nowPinched = pinched ? pinch < 0.7 : pinch < 0.45;
+          const nowPinched = pinched ? pinch < 0.8 : pinch < 0.5;
 
           if (nowPinched && !pinched) {
             pinchStart = { x: sx, y: sy };
@@ -1541,7 +1555,7 @@
             document.body.classList.add('palm-pinching');
           } else if (nowPinched && pinched) {
             if (pinchMode === 'pending' &&
-                Math.hypot(sx - pinchStart.x, sy - pinchStart.y) > 26) {
+                Math.hypot(sx - pinchStart.x, sy - pinchStart.y) > 18) {
               pinchMode = 'scroll';
               scrollAnchorY = sy;
               document.body.classList.add('palm-grabbing');
@@ -1550,8 +1564,8 @@
             if (pinchMode === 'scroll') {
               // Grab-the-page metaphor: content follows the pinched hand
               const dy = sy - scrollAnchorY;
-              if (Math.abs(dy) > 2) {
-                window.scrollBy(0, -dy * 2.2);
+              if (Math.abs(dy) > 1) {
+                pageScroll(-dy * 2.5);
                 scrollAnchorY = sy;
               }
               setStatus('SCROLLING 🤏', 'active');
@@ -1568,6 +1582,32 @@
             setStatus('TRACKING ✋', 'active');
           }
           pinched = nowPinched;
+
+          // EDGE SCROLL: open hand held near the top/bottom of the screen
+          // scrolls the page — position-based, so it works even if pinch
+          // recognition struggles with lighting or hand angle.
+          let edgeInfo = '';
+          if (!nowPinched) {
+            const h = window.innerHeight;
+            const zoneH = h * 0.13;
+            if (sy < zoneH) {
+              const speed = (1 - sy / zoneH) * 24;
+              pageScroll(-speed);
+              setStatus('SCROLLING ⬆', 'active');
+              edgeInfo = ' • edge↑';
+            } else if (sy > h - zoneH) {
+              const speed = ((sy - (h - zoneH)) / zoneH) * 24;
+              pageScroll(speed);
+              setStatus('SCROLLING ⬇', 'active');
+              edgeInfo = ' • edge↓';
+            }
+          }
+
+          // Live readout of what the tracker sees, for tuning + trust
+          const gesture = nowPinched
+            ? (pinchMode === 'scroll' ? 'PINCH-DRAG' : 'PINCH')
+            : 'OPEN PALM';
+          palmDebug.textContent = gesture + ' • grip ' + pinch.toFixed(2) + edgeInfo;
         }
 
         function loop() {
@@ -1583,6 +1623,7 @@
               } else {
                 hasFix = false;
                 setStatus('SHOW YOUR PALM', 'info');
+                palmDebug.textContent = 'NO HAND DETECTED';
                 if (!firstDetect && !palmToast.classList.contains('visible')) {
                   showToast('✋ Hand lost — <b>raise your open palm</b> toward the camera', 2000);
                 }
