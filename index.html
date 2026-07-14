@@ -27,7 +27,7 @@
         opacity: 1.0;
       }
     </style>
-    <link rel="stylesheet" crossorigin href="/assets/index-BBnKA-KQ.css">
+    <link rel="stylesheet" crossorigin href="/assets/index-BHVtAbzi.css">
   </head>
   <body>
     <!-- MATRIX WORDS BACKGROUND FLOW -->
@@ -1326,6 +1326,58 @@
       </span>
     </div>
 
+    <!-- PALM VISION CONTROLLER ELEMENTS -->
+    <div id="palm-control" class="palm-control-btn" role="button" tabindex="0" aria-label="Toggle Palm Cursor Control">
+      <div class="palm-pulse"></div>
+      <span class="palm-icon">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/>
+          <path d="M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2"/>
+          <path d="M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8"/>
+          <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>
+        </svg>
+      </span>
+    </div>
+
+    <div id="palm-panel" class="palm-panel">
+      <video id="palm-video" class="palm-video" autoplay playsinline muted></video>
+      <div id="palm-status" class="palm-status">INITIALIZING…</div>
+      <div class="palm-hints">
+        <span>✋ MOVE — cursor</span>
+        <span>🤏 PINCH — click</span>
+        <span>✊ FIST + drag — scroll</span>
+      </div>
+    </div>
+
+    <!-- PALM GESTURE GUIDE OVERLAY -->
+    <div id="palm-guide" class="palm-guide">
+      <div class="palm-guide-inner">
+        <div class="palm-guide-title">GESTURE CONTROL <span>// ONLINE</span></div>
+        <div class="palm-guide-sub">Raise your hand in front of the camera</div>
+        <div class="palm-guide-grid">
+          <div class="palm-guide-card">
+            <div class="palm-guide-emoji">✋</div>
+            <div class="palm-guide-name">OPEN PALM</div>
+            <div class="palm-guide-desc">Move your palm to steer the cursor</div>
+          </div>
+          <div class="palm-guide-card">
+            <div class="palm-guide-emoji">🤏</div>
+            <div class="palm-guide-name">PINCH</div>
+            <div class="palm-guide-desc">Tap thumb + index finger together to click</div>
+          </div>
+          <div class="palm-guide-card">
+            <div class="palm-guide-emoji">✊</div>
+            <div class="palm-guide-name">FIST + DRAG</div>
+            <div class="palm-guide-desc">Close your fist and move up / down to scroll</div>
+          </div>
+        </div>
+        <div class="palm-guide-dismiss">Guide closes automatically when your hand is detected</div>
+      </div>
+    </div>
+
+    <!-- PALM GESTURE TOAST (contextual prompts) -->
+    <div id="palm-toast" class="palm-toast"></div>
+
     <!-- CORE INTERACTION SCRIPT -->
     <script>
       // 8. AUDIO CONTROLLER INTERSTELLAR & AUTOPLAY LOGIC
@@ -1453,6 +1505,244 @@
 
         setInterval(drawMatrix, 33);
       }
+    </script>
+
+    <!-- 10. PALM VISION CURSOR CONTROL (MediaPipe Hand Landmarker) -->
+    <script>
+      (() => {
+        const palmBtn = document.getElementById('palm-control');
+        const palmPanel = document.getElementById('palm-panel');
+        const palmVideo = document.getElementById('palm-video');
+        const palmStatus = document.getElementById('palm-status');
+        const palmGuide = document.getElementById('palm-guide');
+        const palmToast = document.getElementById('palm-toast');
+        if (!palmBtn) return;
+
+        // --- On-screen gesture prompts -------------------------------
+        let toastTimer = null;
+        let guideDismissed = false;
+        let firstDetect = true;
+
+        function showToast(html, ms) {
+          palmToast.innerHTML = html;
+          palmToast.classList.add('visible');
+          clearTimeout(toastTimer);
+          toastTimer = setTimeout(() => palmToast.classList.remove('visible'), ms || 2600);
+        }
+
+        function showGuide() {
+          guideDismissed = false;
+          palmGuide.classList.add('visible');
+        }
+
+        function hideGuide() {
+          if (guideDismissed) return;
+          guideDismissed = true;
+          palmGuide.classList.remove('visible');
+        }
+
+        const MP_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+        const MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
+
+        let landmarker = null;
+        let stream = null;
+        let rafId = null;
+        let active = false;
+        let lastVideoTime = -1;
+
+        // Smoothed screen-space cursor position
+        let sx = window.innerWidth / 2, sy = window.innerHeight / 2;
+        let hasFix = false;
+
+        // Gesture state
+        let pinched = false;
+        let fisted = false;
+        let fistAnchorY = 0;
+        let lastHoverEl = null;
+
+        function setStatus(text, tone) {
+          palmStatus.textContent = text;
+          palmStatus.dataset.tone = tone || 'info';
+        }
+
+        const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+        function emitPointer(x, y) {
+          x = Math.min(Math.max(x, 1), window.innerWidth - 2);
+          y = Math.min(Math.max(y, 1), window.innerHeight - 2);
+          const el = document.elementFromPoint(x, y);
+          const opts = { bubbles: true, cancelable: true, clientX: x, clientY: y, view: window };
+          (el || window).dispatchEvent(new MouseEvent('mousemove', opts));
+          if (el && el !== lastHoverEl) {
+            el.dispatchEvent(new MouseEvent('mouseover', opts));
+            lastHoverEl = el;
+          }
+          return { el, x, y };
+        }
+
+        function emitClick(x, y) {
+          const el = document.elementFromPoint(x, y);
+          if (!el) return;
+          el.dispatchEvent(new MouseEvent('click', {
+            bubbles: true, cancelable: true, clientX: x, clientY: y, view: window
+          }));
+        }
+
+        function processHand(lm) {
+          if (firstDetect) {
+            firstDetect = false;
+            hideGuide();
+            showToast('✋ HAND LOCKED — <b>move your palm</b> to steer the cursor', 3200);
+          }
+          // Palm centre = middle-finger knuckle; hand scale = wrist→knuckle span
+          const palm = lm[9];
+          const scale = Math.max(dist(lm[0], lm[9]), 0.001);
+
+          // Mirror X (selfie view) and map the central 60% of the frame to the full viewport
+          const zone = (v) => Math.min(Math.max((v - 0.2) / 0.6, 0), 1);
+          const tx = zone(1 - palm.x) * window.innerWidth;
+          const ty = zone(palm.y) * window.innerHeight;
+
+          if (!hasFix) { sx = tx; sy = ty; hasFix = true; }
+          const alpha = 0.3;
+          sx += (tx - sx) * alpha;
+          sy += (ty - sy) * alpha;
+
+          // FIST (scroll): middle/ring/pinky tips curled toward the wrist.
+          // Uses only those three fingers so a pinch is never mistaken for a fist.
+          const curl = (dist(lm[12], lm[0]) + dist(lm[16], lm[0]) + dist(lm[20], lm[0])) / (3 * scale);
+          const nowFisted = fisted ? curl < 1.55 : curl < 1.35;
+
+          if (nowFisted && !fisted) {
+            fistAnchorY = sy;
+            document.body.classList.add('palm-grabbing');
+            showToast('✊ GRAB — <b>drag up or down</b> to scroll the page', 2200);
+          } else if (!nowFisted && fisted) {
+            document.body.classList.remove('palm-grabbing');
+          }
+          fisted = nowFisted;
+
+          if (fisted) {
+            // Grab-the-page metaphor: drag fist down → page content follows down
+            const dy = sy - fistAnchorY;
+            if (Math.abs(dy) > 4) {
+              window.scrollBy(0, -dy * 1.6);
+              fistAnchorY = sy;
+            }
+            setStatus('SCROLLING ✊', 'active');
+            emitPointer(sx, sy);
+            return;
+          }
+
+          emitPointer(sx, sy);
+
+          // PINCH (click): thumb tip ↔ index tip, with hysteresis to avoid repeats
+          const pinch = dist(lm[4], lm[8]) / scale;
+          const nowPinched = pinched ? pinch < 0.7 : pinch < 0.45;
+          if (nowPinched && !pinched) {
+            document.body.classList.add('palm-pinching');
+            emitClick(sx, sy);
+            setStatus('CLICK 🤏', 'active');
+            showToast('🤏 <b>CLICK</b> registered', 1400);
+          } else if (!nowPinched && pinched) {
+            document.body.classList.remove('palm-pinching');
+          } else if (!nowPinched) {
+            setStatus('TRACKING ✋', 'active');
+          }
+          pinched = nowPinched;
+        }
+
+        function loop() {
+          if (!active) return;
+          if (palmVideo.readyState >= 2 && palmVideo.currentTime !== lastVideoTime) {
+            lastVideoTime = palmVideo.currentTime;
+            try {
+              const result = landmarker.detectForVideo(palmVideo, performance.now());
+              if (result.landmarks && result.landmarks.length > 0) {
+                processHand(result.landmarks[0]);
+              } else {
+                hasFix = false;
+                setStatus('SHOW YOUR PALM', 'info');
+                if (!firstDetect && !palmToast.classList.contains('visible')) {
+                  showToast('✋ Hand lost — <b>raise your open palm</b> toward the camera', 2000);
+                }
+              }
+            } catch (err) { /* skip a bad frame, keep the loop alive */ }
+          }
+          rafId = requestAnimationFrame(loop);
+        }
+
+        async function start() {
+          active = true;
+          palmBtn.classList.add('active');
+          palmPanel.classList.add('visible');
+
+          try {
+            if (!landmarker) {
+              setStatus('LOADING VISION MODEL…', 'info');
+              const vision = await import(MP_CDN);
+              const files = await vision.FilesetResolver.forVisionTasks(MP_CDN + '/wasm');
+              landmarker = await vision.HandLandmarker.createFromOptions(files, {
+                baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
+                runningMode: 'VIDEO',
+                numHands: 1
+              });
+            }
+
+            setStatus('REQUESTING CAMERA…', 'info');
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }
+            });
+            palmVideo.srcObject = stream;
+            await palmVideo.play();
+
+            if (!active) { stop(); return; }
+            document.body.classList.add('palm-active');
+            setStatus('SHOW YOUR PALM', 'info');
+            hasFix = false;
+            firstDetect = true;
+            lastVideoTime = -1;
+            showGuide();
+            rafId = requestAnimationFrame(loop);
+          } catch (err) {
+            const denied = err && (err.name === 'NotAllowedError' || err.name === 'NotFoundError');
+            setStatus(denied ? 'CAMERA UNAVAILABLE / BLOCKED' : 'VISION FAILED TO LOAD', 'error');
+            active = false;
+            palmBtn.classList.remove('active');
+            setTimeout(() => { if (!active) palmPanel.classList.remove('visible'); }, 2500);
+          }
+        }
+
+        function stop() {
+          active = false;
+          if (rafId) cancelAnimationFrame(rafId);
+          rafId = null;
+          if (stream) {
+            stream.getTracks().forEach(t => t.stop());
+            stream = null;
+          }
+          palmVideo.srcObject = null;
+          pinched = false;
+          fisted = false;
+          hasFix = false;
+          palmBtn.classList.remove('active');
+          palmPanel.classList.remove('visible');
+          hideGuide();
+          palmToast.classList.remove('visible');
+          document.body.classList.remove('palm-active', 'palm-pinching', 'palm-grabbing');
+        }
+
+        palmBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          active ? stop() : start();
+        });
+        palmBtn.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            active ? stop() : start();
+          }
+        });
+      })();
     </script>
   </body>
 </html>
