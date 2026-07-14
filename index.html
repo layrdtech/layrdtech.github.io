@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600&display=swap" rel="stylesheet" />
     
     <!-- Stylesheet -->
-    <link rel="stylesheet" crossorigin href="/assets/index-Bg4Ld_VQ.css">
+    <link rel="stylesheet" crossorigin href="/assets/index-CGlSQbjS.css">
   </head>
   <body>
     <!-- BACKGROUND VIDEO PLAYER -->
@@ -524,35 +524,49 @@
       const logoParallax = document.getElementById('logo-parallax-element');
       const ambientGrid = document.getElementById('ambient-grid');
 
+      // rAF-throttled: scroll can fire far faster than the display refreshes,
+      // and each write here invalidates large blurred layers
+      let parallaxTicking = false;
       window.addEventListener('scroll', () => {
-        const scrolled = window.pageYOffset;
-        glowCyan.style.transform = `translateY(${scrolled * 0.12}px)`;
-        glowPurple.style.transform = `translateY(${scrolled * 0.08}px)`;
-        glowCyanBottom.style.transform = `translateY(${scrolled * 0.05}px)`;
-        
-        // Translate grid downwards on scroll (smooth 3D depth)
-        if (ambientGrid) {
-          ambientGrid.style.transform = `translateY(${scrolled * 0.15}px)`;
-        }
-        
-        // Tilt logo slightly on scroll
-        if (logoParallax) {
-          logoParallax.style.transform = `translateY(${scrolled * 0.06}px) rotateY(${scrolled * 0.15}deg)`;
-        }
-      });
+        if (parallaxTicking) return;
+        parallaxTicking = true;
+        requestAnimationFrame(() => {
+          parallaxTicking = false;
+          const scrolled = window.pageYOffset;
+          glowCyan.style.transform = `translateY(${scrolled * 0.12}px)`;
+          glowPurple.style.transform = `translateY(${scrolled * 0.08}px)`;
+          glowCyanBottom.style.transform = `translateY(${scrolled * 0.05}px)`;
 
-      // Logo follow mouse mousemove tilt
+          // Translate grid downwards on scroll (smooth 3D depth)
+          if (ambientGrid) {
+            ambientGrid.style.transform = `translateY(${scrolled * 0.15}px)`;
+          }
+
+          // Tilt logo slightly on scroll
+          if (logoParallax) {
+            logoParallax.style.transform = `translateY(${scrolled * 0.06}px) rotateY(${scrolled * 0.15}deg)`;
+          }
+        });
+      }, { passive: true });
+
+      // Logo follow mouse mousemove tilt (rAF-throttled)
       const logoContainer = document.querySelector('.logo-showcase-container');
       if (logoContainer) {
+        let tiltTicking = false;
+        let tiltEvent = null;
         window.addEventListener('mousemove', (e) => {
-          const cx = window.innerWidth / 2;
-          const cy = window.innerHeight / 2;
-          const dx = e.clientX - cx;
-          const dy = e.clientY - cy;
-          const tiltX = (dy / cy) * 15;
-          const tiltY = (dx / cx) * 15;
-          logoContainer.style.transform = `rotateX(${-tiltX}deg) rotateY(${tiltY}deg)`;
-        });
+          tiltEvent = e;
+          if (tiltTicking) return;
+          tiltTicking = true;
+          requestAnimationFrame(() => {
+            tiltTicking = false;
+            const cx = window.innerWidth / 2;
+            const cy = window.innerHeight / 2;
+            const tiltX = ((tiltEvent.clientY - cy) / cy) * 15;
+            const tiltY = ((tiltEvent.clientX - cx) / cx) * 15;
+            logoContainer.style.transform = `rotateX(${-tiltX}deg) rotateY(${tiltY}deg)`;
+          });
+        }, { passive: true });
       }
 
       // 5. SANDBOX LOGIC :: ENGINEERING TOOLKIT (real calculators + code lab, no simulation)
@@ -1549,8 +1563,19 @@
         const MP_CDN = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
         const MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 
-        // Lighter pipeline on phones/tablets: smaller camera feed + half-rate detection
         const isMobile = window.matchMedia('(max-width: 768px), (pointer: coarse)').matches;
+
+        // The looping background video costs decode + composite every frame.
+        // Suspend it while hand tracking or the arcade runs — that's exactly
+        // when the GPU budget is needed elsewhere.
+        window.__bgVideoSuspend = function () {
+          const v = document.querySelector('.bg-video');
+          const busy = document.body.classList.contains('palm-active')
+            || document.body.classList.contains('game-open');
+          if (!v) return;
+          if (busy && !v.paused) v.pause();
+          else if (!busy && v.paused) v.play().catch(() => {});
+        };
 
         let landmarker = null;
         let stream = null;
@@ -1603,17 +1628,25 @@
           window.scrollBy({ top: delta, left: 0, behavior: 'instant' });
         }
 
+        let lastHoverCheck = 0;
         function emitPointer(x, y) {
           x = Math.min(Math.max(x, 1), window.innerWidth - 2);
           y = Math.min(Math.max(y, 1), window.innerHeight - 2);
-          const el = document.elementFromPoint(x, y);
           const opts = { bubbles: true, cancelable: true, clientX: x, clientY: y, view: window };
-          (el || window).dispatchEvent(new MouseEvent('mousemove', opts));
-          if (el && el !== lastHoverEl) {
-            el.dispatchEvent(new MouseEvent('mouseover', opts));
-            lastHoverEl = el;
+          // cursor/spotlight/game listeners all live on window — no hit-test needed
+          window.dispatchEvent(new MouseEvent('mousemove', opts));
+          // hover detection needs elementFromPoint (forces a hit-test), so
+          // run it at ~11Hz instead of every camera frame
+          const nowT = performance.now();
+          if (nowT - lastHoverCheck > 90) {
+            lastHoverCheck = nowT;
+            const el = document.elementFromPoint(x, y);
+            if (el && el !== lastHoverEl) {
+              el.dispatchEvent(new MouseEvent('mouseover', opts));
+              lastHoverEl = el;
+            }
           }
-          return { el, x, y };
+          return { x, y };
         }
 
         function emitClick(x, y) {
@@ -1817,17 +1850,20 @@
             }
 
             setStatus('REQUESTING CAMERA…', 'info');
-            const camSize = isMobile
-              ? { width: { ideal: 480 }, height: { ideal: 360 } }
-              : { width: { ideal: 640 }, height: { ideal: 480 } };
+            // 480x360 is plenty for hand landmarks and roughly halves the
+            // per-frame inference cost vs 640x480
             stream = await navigator.mediaDevices.getUserMedia({
-              video: { ...camSize, facingMode: 'user', frameRate: { ideal: isMobile ? 24 : 30 } }
+              video: {
+                width: { ideal: 480 }, height: { ideal: 360 },
+                facingMode: 'user', frameRate: { ideal: isMobile ? 24 : 30 }
+              }
             });
             palmVideo.srcObject = stream;
             await palmVideo.play();
 
             if (!active) { stop(); return; }
             document.body.classList.add('palm-active');
+            window.__bgVideoSuspend();
             setStatus('SHOW YOUR PALM', 'info');
             hasFix = false;
             firstDetect = true;
@@ -1863,6 +1899,7 @@
           hideGuide();
           palmToast.classList.remove('visible');
           document.body.classList.remove('palm-active', 'palm-pinching', 'palm-grabbing');
+          window.__bgVideoSuspend();
         }
 
         palmBtn.addEventListener('click', (e) => {
@@ -2721,6 +2758,7 @@
         function openModal() {
           modal.classList.add('open');
           document.body.classList.add('game-open');
+          window.__bgVideoSuspend?.();
           screen = 'menu';
           show(menuEl);
           window.__layrd?.speak('Welcome to the engineering arcade.');
@@ -2731,6 +2769,7 @@
           screen = 'menu';
           modal.classList.remove('open');
           document.body.classList.remove('game-open');
+          window.__bgVideoSuspend?.();
         }
 
         openBtn.addEventListener('click', openModal);
