@@ -1339,7 +1339,7 @@
     <!-- PALM GESTURE GUIDE OVERLAY -->
     <div id="palm-guide" class="palm-guide">
       <div class="palm-guide-inner">
-        <div class="palm-guide-title">J.A.R.V.I.S. VISION <span>// ONLINE</span></div>
+        <div class="palm-guide-title">L.A.Y.R.D. VISION <span>// ONLINE</span></div>
         <div class="palm-guide-sub">Raise your hand in front of the camera</div>
         <div class="palm-guide-grid">
           <div class="palm-guide-card">
@@ -1390,7 +1390,7 @@
     <div id="arcade-modal" class="arcade-modal">
       <div class="arcade-shell">
         <div class="arcade-head">
-          <div class="arcade-title">ENGINEERING ARCADE <span>// J.A.R.V.I.S.</span></div>
+          <div class="arcade-title">ENGINEERING ARCADE <span>// L.A.Y.R.D.</span></div>
           <button id="arcade-close" class="arcade-close" aria-label="Close arcade">✕</button>
         </div>
 
@@ -1398,14 +1398,14 @@
           <div class="arcade-row-label">SELECT MODULE</div>
           <div class="arcade-games">
             <div class="arcade-game-card selected" data-game="catch" role="button" tabindex="0">
-              <div class="agc-emoji">⚙️</div>
-              <div class="agc-name">CIRCUIT CATCH</div>
-              <div class="agc-desc">Steer the tray with your palm and catch falling components. Dodge the bugs.</div>
+              <div class="agc-emoji">🔋🔌💡</div>
+              <div class="agc-name">CIRCUIT BUILDER</div>
+              <div class="agc-desc">Catch components in circuit order — power, conductor, load — to complete circuits. Dodge the bugs.</div>
             </div>
             <div class="arcade-game-card" data-game="zap" role="button" tabindex="0">
-              <div class="agc-emoji">⚡</div>
-              <div class="agc-name">BUG ZAPPER</div>
-              <div class="agc-desc">Pinch, click, or tap to zap the bugs before they corrupt the system.</div>
+              <div class="agc-emoji">🐛⚡</div>
+              <div class="agc-name">DEBUG PROTOCOL</div>
+              <div class="agc-desc">Bugs are crawling the mainboard. Pinch, click, or tap to debug them — critical bugs are worth more.</div>
             </div>
           </div>
 
@@ -1418,7 +1418,7 @@
 
           <div class="arcade-row-label">OPTIONS</div>
           <div class="arcade-chips">
-            <button id="arcade-voice" class="arcade-chip selected">🔊 JARVIS VOICE</button>
+            <button id="arcade-voice" class="arcade-chip selected">🔊 L.A.Y.R.D. VOICE</button>
             <button id="arcade-fx" class="arcade-chip selected">✨ GESTURE FX</button>
           </div>
 
@@ -1603,7 +1603,7 @@
             firstDetect = false;
             hideGuide();
             showToast('✋ HAND LOCKED — <b>move your palm</b> to steer the cursor', 3200);
-            window.__jarvis?.speak('Tracking calibrated. Interface is yours.');
+            window.__layrd?.speak('Tracking calibrated. Interface is yours.');
           }
           // Palm centre = middle-finger knuckle; hand scale = wrist→knuckle span
           const palm = lm[9];
@@ -1757,7 +1757,7 @@
             firstDetect = true;
             lastVideoTime = -1;
             showGuide();
-            window.__jarvis?.speak('Gesture interface online. At your service.');
+            window.__layrd?.speak('Gesture interface online. At your service.');
             rafId = requestAnimationFrame(loop);
           } catch (err) {
             const denied = err && (err.name === 'NotAllowedError' || err.name === 'NotFoundError');
@@ -1792,7 +1792,7 @@
           e.stopPropagation();
           if (active) {
             stop();
-            window.__jarvis?.speak('Gesture interface offline.');
+            window.__layrd?.speak('Gesture interface offline.');
           } else {
             start();
           }
@@ -1811,11 +1811,11 @@
       })();
     </script>
 
-    <!-- 11. J.A.R.V.I.S. VOICE + GESTURE MAGIC FX + ENGINEERING ARCADE -->
+    <!-- 11. L.A.Y.R.D. VOICE + GESTURE MAGIC FX + ENGINEERING ARCADE -->
     <script>
-      // ---------- J.A.R.V.I.S. VOICE ----------
+      // ---------- L.A.Y.R.D. VOICE ----------
       (() => {
-        let enabled = localStorage.getItem('jarvis-voice') !== 'off';
+        let enabled = localStorage.getItem('layrd-voice') !== 'off';
         function speak(text) {
           if (!enabled || !('speechSynthesis' in window)) return;
           try {
@@ -1832,12 +1832,12 @@
             speechSynthesis.speak(u);
           } catch (e) { /* voice is a garnish — never let it break the page */ }
         }
-        window.__jarvis = {
+        window.__layrd = {
           speak,
           get enabled() { return enabled; },
           set enabled(v) {
             enabled = v;
-            localStorage.setItem('jarvis-voice', v ? 'on' : 'off');
+            localStorage.setItem('layrd-voice', v ? 'on' : 'off');
           }
         };
       })();
@@ -1847,7 +1847,7 @@
         const canvas = document.getElementById('fx-canvas');
         const ctx = canvas.getContext('2d');
         const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        let enabled = localStorage.getItem('jarvis-fx') !== 'off' && !reduced;
+        let enabled = localStorage.getItem('layrd-fx') !== 'off' && !reduced;
         const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
         const particles = [];
         const MAX = 220;
@@ -1931,7 +1931,7 @@
           get enabled() { return enabled; },
           set enabled(v) {
             enabled = v && !reduced;
-            localStorage.setItem('jarvis-fx', v ? 'on' : 'off');
+            localStorage.setItem('layrd-fx', v ? 'on' : 'off');
           }
         };
 
@@ -1967,9 +1967,10 @@
           hard:   { spawnMs: 430, fall: 3.8, bugs: 7, bugSpeed: 2.3 }
         };
         const GAME_TIME = 45;
-        const CATCH_ITEMS = [
-          { e: '⚙️', v: 10 }, { e: '🔩', v: 5 }, { e: '⚡', v: 15 }, { e: '🧲', v: 12 }
-        ];
+        // Circuit Builder: complete circuits by catching the next node in
+        // order (power source → conductor → load). Spares score small.
+        const CIRCUIT = ['🔋', '🔌', '💡'];
+        const SPARES = ['⚙️', '🔩', '🧲', '⚡'];
 
         let game = 'catch';
         let diff = 'normal';
@@ -1987,6 +1988,9 @@
         let shake = 0;
         let trayX = 0;
         let cursorX = 0, cursorY = 0;
+        let circuitIdx = 0;      // next node needed in the circuit
+        let circuitsDone = 0;
+        let traces = [];         // decorative PCB traces for Debug Protocol
         const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
 
         const bestKey = () => `arcade-best-${game}-${diff}`;
@@ -2027,15 +2031,19 @@
           popups.push({ x, y, text, color, life: 1 });
         }
 
-        // ----- CIRCUIT CATCH -----
+        // ----- CIRCUIT BUILDER -----
         function updateCatch(dt, w, h) {
           const d = DIFF[diff];
           const now = performance.now();
           if (now - lastSpawn > d.spawnMs) {
             lastSpawn = now;
-            const isBug = Math.random() < 0.28;
-            const it = isBug ? { e: '🐛', v: -20 } : CATCH_ITEMS[(Math.random() * CATCH_ITEMS.length) | 0];
-            items.push({ x: 30 + Math.random() * (w - 60), y: -30, e: it.e, v: it.v, vy: d.fall * (0.8 + Math.random() * 0.5) });
+            const roll = Math.random();
+            let e;
+            if (roll < 0.24) e = '🐛';
+            else if (roll < 0.62) e = CIRCUIT[circuitIdx]; // bias toward the needed node
+            else if (roll < 0.8) e = CIRCUIT[(Math.random() * CIRCUIT.length) | 0];
+            else e = SPARES[(Math.random() * SPARES.length) | 0];
+            items.push({ x: 30 + Math.random() * (w - 60), y: -30, e, vy: d.fall * (0.8 + Math.random() * 0.5) });
           }
 
           const target = toCanvasXY(cursorX, cursorY).x;
@@ -2047,21 +2055,64 @@
             const it = items[i];
             it.y += it.vy * dt * 60;
             if (it.y > trayY - 14 && it.y < trayY + 22 && Math.abs(it.x - trayX) < trayW / 2 + 14) {
-              score = Math.max(0, score + it.v);
-              if (it.v > 0) {
-                spawnSparks(it.x, it.y, '0,240,255', 14);
-                addPopup(it.x, it.y - 10, '+' + it.v, '#00f0ff');
-              } else {
+              if (it.e === '🐛') {
+                score = Math.max(0, score - 20);
                 spawnSparks(it.x, it.y, '255,84,112', 20);
-                addPopup(it.x, it.y - 10, it.v, '#ff5470');
+                addPopup(it.x, it.y - 10, '-20 SHORT CIRCUIT', '#ff5470');
                 shake = 10;
-                window.__jarvis?.speak('Bug detected.');
+                window.__layrd?.speak('Bug detected.');
+              } else if (it.e === CIRCUIT[circuitIdx]) {
+                circuitIdx++;
+                score += 25;
+                spawnSparks(it.x, it.y, '0,240,255', 16);
+                addPopup(it.x, it.y - 10, '+25 NODE', '#00f0ff');
+                if (circuitIdx >= CIRCUIT.length) {
+                  circuitIdx = 0;
+                  circuitsDone++;
+                  score += 50;
+                  spawnSparks(trayX, trayY - 10, '112,0,255', 30);
+                  addPopup(trayX, trayY - 40, '+50 CIRCUIT COMPLETE', '#a866ff');
+                  window.__layrd?.speak('Circuit complete. Well engineered.');
+                }
+              } else {
+                score += 5;
+                spawnSparks(it.x, it.y, '255,255,255', 8);
+                addPopup(it.x, it.y - 10, '+5 SPARE', 'rgba(255,255,255,0.7)');
               }
               items.splice(i, 1);
               continue;
             }
             if (it.y > h + 30) items.splice(i, 1);
           }
+
+          // Circuit blueprint HUD: the build order, with progress lit up
+          ctx.textAlign = 'center';
+          const cw = 44, cy0 = 30;
+          const cx0 = w / 2 - ((CIRCUIT.length - 1) * cw) / 2;
+          ctx.font = `${11 * dpr}px 'Space Grotesk', monospace`;
+          ctx.fillStyle = 'rgba(255,255,255,0.45)';
+          ctx.fillText('BUILD: POWER → CONDUCTOR → LOAD', (w / 2) * dpr, 12 * dpr);
+          CIRCUIT.forEach((e, i) => {
+            const x = cx0 + i * cw;
+            const done = i < circuitIdx;
+            const current = i === circuitIdx;
+            ctx.globalAlpha = done ? 1 : current ? 0.9 : 0.3;
+            if (current) {
+              const pulse = 0.35 + Math.sin(performance.now() / 250) * 0.2;
+              ctx.strokeStyle = `rgba(0,240,255,${pulse + 0.3})`;
+              ctx.lineWidth = 1.5 * dpr;
+              ctx.strokeRect((x - 16) * dpr, (cy0 - 16) * dpr, 32 * dpr, 32 * dpr);
+            }
+            ctx.font = `${20 * dpr}px serif`;
+            ctx.fillText(e, x * dpr, (cy0 + 7) * dpr);
+            if (done) {
+              ctx.font = `${10 * dpr}px monospace`;
+              ctx.fillStyle = '#00f0ff';
+              ctx.fillText('✓', (x + 14) * dpr, (cy0 - 8) * dpr);
+              ctx.fillStyle = 'rgba(255,255,255,0.45)';
+            }
+            ctx.globalAlpha = 1;
+          });
 
           // draw tray
           ctx.save();
@@ -2079,16 +2130,52 @@
           items.forEach(it => ctx.fillText(it.e, it.x * dpr, it.y * dpr));
         }
 
-        // ----- BUG ZAPPER -----
+        // ----- DEBUG PROTOCOL -----
+        function makeTraces(w, h) {
+          // decorative PCB traces: right-angled runs with solder-pad nodes
+          traces = [];
+          for (let i = 0; i < 10; i++) {
+            const pts = [];
+            let x = Math.random() * w, y = Math.random() * h;
+            pts.push({ x, y });
+            const segs = 3 + ((Math.random() * 3) | 0);
+            for (let s = 0; s < segs; s++) {
+              if (s % 2 === 0) x = Math.min(Math.max(x + (Math.random() - 0.5) * w * 0.5, 10), w - 10);
+              else y = Math.min(Math.max(y + (Math.random() - 0.5) * h * 0.5, 10), h - 10);
+              pts.push({ x, y });
+            }
+            traces.push(pts);
+          }
+        }
+
+        function drawTraces() {
+          ctx.strokeStyle = 'rgba(0, 240, 255, 0.09)';
+          ctx.fillStyle = 'rgba(0, 240, 255, 0.16)';
+          ctx.lineWidth = 1.5 * dpr;
+          traces.forEach(pts => {
+            ctx.beginPath();
+            pts.forEach((p, i) => i ? ctx.lineTo(p.x * dpr, p.y * dpr) : ctx.moveTo(p.x * dpr, p.y * dpr));
+            ctx.stroke();
+            pts.forEach(p => {
+              ctx.beginPath();
+              ctx.arc(p.x * dpr, p.y * dpr, 3 * dpr, 0, Math.PI * 2);
+              ctx.fill();
+            });
+          });
+        }
+
         function ensureBugs(w, h) {
           const d = DIFF[diff];
           while (bugs.length < d.bugs) {
+            const critical = Math.random() < 0.18;
             bugs.push({
               x: Math.random() * w,
               y: 40 + Math.random() * (h - 80),
               a: Math.random() * Math.PI * 2,
               turn: (Math.random() - 0.5) * 0.1,
-              phase: Math.random() * 10
+              phase: Math.random() * 10,
+              critical,
+              speed: critical ? 1.7 : 1
             });
           }
         }
@@ -2096,19 +2183,29 @@
         function updateZap(dt, w, h) {
           const d = DIFF[diff];
           ensureBugs(w, h);
+          drawTraces();
           bugs.forEach(b => {
             b.a += b.turn + Math.sin(performance.now() / 700 + b.phase) * 0.05;
-            b.x += Math.cos(b.a) * d.bugSpeed * dt * 60;
-            b.y += Math.sin(b.a) * d.bugSpeed * dt * 60;
+            b.x += Math.cos(b.a) * d.bugSpeed * b.speed * dt * 60;
+            b.y += Math.sin(b.a) * d.bugSpeed * b.speed * dt * 60;
             if (b.x < 20 || b.x > w - 20) b.a = Math.PI - b.a;
             if (b.y < 20 || b.y > h - 20) b.a = -b.a;
             b.x = Math.min(Math.max(b.x, 20), w - 20);
             b.y = Math.min(Math.max(b.y, 20), h - 20);
           });
 
-          ctx.font = `${26 * dpr}px serif`;
           ctx.textAlign = 'center';
-          bugs.forEach(b => ctx.fillText('🐛', b.x * dpr, b.y * dpr));
+          bugs.forEach(b => {
+            if (b.critical) {
+              const pulse = 8 + Math.sin(performance.now() / 160 + b.phase) * 4;
+              ctx.beginPath();
+              ctx.arc(b.x * dpr, (b.y - 8) * dpr, pulse * 2 * dpr, 0, Math.PI * 2);
+              ctx.fillStyle = 'rgba(255, 84, 112, 0.14)';
+              ctx.fill();
+            }
+            ctx.font = `${(b.critical ? 30 : 26) * dpr}px serif`;
+            ctx.fillText(b.critical ? '🪲' : '🐛', b.x * dpr, b.y * dpr);
+          });
 
           // crosshair at cursor
           const c = toCanvasXY(cursorX, cursorY);
@@ -2137,11 +2234,13 @@
             const b = bugs[hit];
             bugs.splice(hit, 1);
             combo++;
-            const pts = 10 + (combo - 1) * 2;
+            const base = b.critical ? 30 : 10;
+            const pts = base + (combo - 1) * 2;
             score += pts;
-            spawnSparks(b.x, b.y, '112,0,255', 22);
-            addPopup(b.x, b.y - 12, `+${pts}${combo > 1 ? ' x' + combo : ''}`, '#a866ff');
+            spawnSparks(b.x, b.y, b.critical ? '255,84,112' : '112,0,255', b.critical ? 30 : 22);
+            addPopup(b.x, b.y - 12, `+${pts}${b.critical ? ' CRITICAL' : ''}${combo > 1 ? ' x' + combo : ''}`, b.critical ? '#ff5470' : '#a866ff');
             window.__fx?.burst(clientX, clientY);
+            if (b.critical) window.__layrd?.speak('Critical bug resolved.');
           } else {
             combo = 0;
           }
@@ -2210,13 +2309,15 @@
           show(stageEl);
           items = []; bugs = []; sparks = []; popups = [];
           score = 0; combo = 0; timeLeft = GAME_TIME; shake = 0;
+          circuitIdx = 0; circuitsDone = 0;
           lastSpawn = 0; lastTick = performance.now();
           resizeCanvas();
           trayX = canvas.width / dpr / 2;
+          makeTraces(canvas.width / dpr, canvas.height / dpr);
           bestEl.textContent = 'BEST ' + getBest();
-          window.__jarvis?.speak(game === 'catch'
-            ? 'Circuit catch initialized. Components incoming.'
-            : 'Bug zapper armed. Eliminate the intruders.');
+          window.__layrd?.speak(game === 'catch'
+            ? 'Circuit builder initialized. Assemble power, conductor, load.'
+            : 'Debug protocol armed. Clear the mainboard.');
           rafId = requestAnimationFrame(loop);
         }
 
@@ -2226,9 +2327,11 @@
           const best = Math.max(getBest(), score);
           localStorage.setItem(bestKey(), best);
           overScoreEl.textContent = score;
-          overBestEl.textContent = 'BEST ' + best;
+          overBestEl.textContent = 'BEST ' + best + (game === 'catch' ? ' • CIRCUITS ' + circuitsDone : '');
           show(overEl);
-          window.__jarvis?.speak(`Session complete. ${score} points.`);
+          window.__layrd?.speak(game === 'catch'
+            ? `Session complete. ${score} points, ${circuitsDone} circuits assembled.`
+            : `Session complete. ${score} points.`);
         }
 
         function openModal() {
@@ -2236,7 +2339,7 @@
           document.body.classList.add('game-open');
           screen = 'menu';
           show(menuEl);
-          window.__jarvis?.speak('Welcome to the engineering arcade.');
+          window.__layrd?.speak('Welcome to the engineering arcade.');
         }
 
         function closeModal() {
@@ -2279,12 +2382,12 @@
 
         // option chips
         function syncChip(chip, on) { chip.classList.toggle('selected', on); }
-        syncChip(voiceChip, window.__jarvis.enabled);
+        syncChip(voiceChip, window.__layrd.enabled);
         syncChip(fxChip, window.__fx.enabled);
         voiceChip.addEventListener('click', () => {
-          window.__jarvis.enabled = !window.__jarvis.enabled;
-          syncChip(voiceChip, window.__jarvis.enabled);
-          if (window.__jarvis.enabled) window.__jarvis.speak('Voice systems online.');
+          window.__layrd.enabled = !window.__layrd.enabled;
+          syncChip(voiceChip, window.__layrd.enabled);
+          if (window.__layrd.enabled) window.__layrd.speak('Voice systems online.');
         });
         fxChip.addEventListener('click', () => {
           window.__fx.enabled = !window.__fx.enabled;
