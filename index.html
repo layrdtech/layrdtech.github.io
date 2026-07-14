@@ -1493,10 +1493,11 @@
 
         const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 
-        // Scrolls whichever element the browser actually uses for page scroll
+        // behavior:'instant' is required: the site sets CSS scroll-behavior:smooth,
+        // which turns plain scrollTop/scrollBy increments into animations that
+        // restart every frame and never actually move the page.
         function pageScroll(delta) {
-          const el = document.scrollingElement || document.documentElement;
-          el.scrollTop += delta;
+          window.scrollBy({ top: delta, left: 0, behavior: 'instant' });
         }
 
         function emitPointer(x, y) {
