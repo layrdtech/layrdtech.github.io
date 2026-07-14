@@ -192,7 +192,7 @@
             <div class="tech-corner bottom-left"></div>
             <div class="tech-corner bottom-right"></div>
             <div class="founder-img-frame">
-              <img src="./public/founder.jpg" alt="Founder of Layrd.Tech" class="founder-img" />
+              <img src="./public/founder.jpg" alt="Founder of Layrd.Tech" class="founder-img" loading="lazy" />
             </div>
             <div class="founder-quote-box">
               <p class="founder-creed">"One million dreams, one mission: better engineering."</p>
@@ -1339,7 +1339,7 @@
     <!-- PALM GESTURE GUIDE OVERLAY -->
     <div id="palm-guide" class="palm-guide">
       <div class="palm-guide-inner">
-        <div class="palm-guide-title">GESTURE CONTROL <span>// ONLINE</span></div>
+        <div class="palm-guide-title">J.A.R.V.I.S. VISION <span>// ONLINE</span></div>
         <div class="palm-guide-sub">Raise your hand in front of the camera</div>
         <div class="palm-guide-grid">
           <div class="palm-guide-card">
@@ -1369,6 +1369,83 @@
 
     <!-- PALM GESTURE TOAST (contextual prompts) -->
     <div id="palm-toast" class="palm-toast"></div>
+
+    <!-- GESTURE MAGIC FX LAYER -->
+    <canvas id="fx-canvas"></canvas>
+
+    <!-- ENGINEERING ARCADE BUTTON -->
+    <div id="arcade-control" class="arcade-control-btn" role="button" tabindex="0" aria-label="Open Engineering Arcade">
+      <span class="arcade-icon">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="6" y1="11" x2="10" y2="11"/>
+          <line x1="8" y1="9" x2="8" y2="13"/>
+          <line x1="15" y1="12" x2="15.01" y2="12"/>
+          <line x1="18" y1="10" x2="18.01" y2="10"/>
+          <path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/>
+        </svg>
+      </span>
+    </div>
+
+    <!-- ENGINEERING ARCADE MODAL -->
+    <div id="arcade-modal" class="arcade-modal">
+      <div class="arcade-shell">
+        <div class="arcade-head">
+          <div class="arcade-title">ENGINEERING ARCADE <span>// J.A.R.V.I.S.</span></div>
+          <button id="arcade-close" class="arcade-close" aria-label="Close arcade">✕</button>
+        </div>
+
+        <div id="arcade-menu" class="arcade-menu">
+          <div class="arcade-row-label">SELECT MODULE</div>
+          <div class="arcade-games">
+            <div class="arcade-game-card selected" data-game="catch" role="button" tabindex="0">
+              <div class="agc-emoji">⚙️</div>
+              <div class="agc-name">CIRCUIT CATCH</div>
+              <div class="agc-desc">Steer the tray with your palm and catch falling components. Dodge the bugs.</div>
+            </div>
+            <div class="arcade-game-card" data-game="zap" role="button" tabindex="0">
+              <div class="agc-emoji">⚡</div>
+              <div class="agc-name">BUG ZAPPER</div>
+              <div class="agc-desc">Pinch, click, or tap to zap the bugs before they corrupt the system.</div>
+            </div>
+          </div>
+
+          <div class="arcade-row-label">DIFFICULTY</div>
+          <div class="arcade-chips" id="arcade-difficulty">
+            <button class="arcade-chip" data-diff="easy">EASY</button>
+            <button class="arcade-chip selected" data-diff="normal">NORMAL</button>
+            <button class="arcade-chip" data-diff="hard">HARD</button>
+          </div>
+
+          <div class="arcade-row-label">OPTIONS</div>
+          <div class="arcade-chips">
+            <button id="arcade-voice" class="arcade-chip selected">🔊 JARVIS VOICE</button>
+            <button id="arcade-fx" class="arcade-chip selected">✨ GESTURE FX</button>
+          </div>
+
+          <button id="arcade-start" class="arcade-start">INITIALIZE ▶</button>
+          <div class="arcade-note">Play with ✋ palm control, mouse, or touch — 45 second runs</div>
+        </div>
+
+        <div id="arcade-stage" class="arcade-stage" style="display: none;">
+          <div class="arcade-hud">
+            <span id="arcade-score">SCORE 0</span>
+            <span id="arcade-time">45s</span>
+            <span id="arcade-best">BEST 0</span>
+          </div>
+          <canvas id="arcade-canvas"></canvas>
+        </div>
+
+        <div id="arcade-over" class="arcade-over" style="display: none;">
+          <div class="arcade-over-title">SESSION COMPLETE</div>
+          <div id="arcade-over-score" class="arcade-over-score">0</div>
+          <div id="arcade-over-best" class="arcade-over-best">BEST 0</div>
+          <div class="arcade-chips arcade-over-actions">
+            <button id="arcade-replay" class="arcade-chip selected">▶ REPLAY</button>
+            <button id="arcade-back" class="arcade-chip">MODULES</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- CORE INTERACTION SCRIPT -->
     <script>
@@ -1526,6 +1603,7 @@
             firstDetect = false;
             hideGuide();
             showToast('✋ HAND LOCKED — <b>move your palm</b> to steer the cursor', 3200);
+            window.__jarvis?.speak('Tracking calibrated. Interface is yours.');
           }
           // Palm centre = middle-finger knuckle; hand scale = wrist→knuckle span
           const palm = lm[9];
@@ -1544,6 +1622,10 @@
           sy += (ty - sy) * alpha;
 
           emitPointer(sx, sy);
+          window.__fx?.trail(sx, sy);
+
+          // Page scrolling is suspended while the arcade is open
+          const gameOpen = document.body.classList.contains('game-open');
 
           // PINCH state machine: thumb tip ↔ index tip, with hysteresis.
           // Release without moving = click; hold and drag = scroll.
@@ -1555,7 +1637,7 @@
             pinchMode = 'pending';
             document.body.classList.add('palm-pinching');
           } else if (nowPinched && pinched) {
-            if (pinchMode === 'pending' &&
+            if (pinchMode === 'pending' && !gameOpen &&
                 Math.hypot(sx - pinchStart.x, sy - pinchStart.y) > 18) {
               pinchMode = 'scroll';
               scrollAnchorY = sy;
@@ -1576,6 +1658,7 @@
               emitClick(pinchStart.x, pinchStart.y);
               setStatus('CLICK 🤏', 'active');
               showToast('🤏 <b>CLICK</b> registered', 1200);
+              window.__fx?.burst(pinchStart.x, pinchStart.y);
             }
             pinchMode = null;
             document.body.classList.remove('palm-pinching', 'palm-grabbing');
@@ -1588,7 +1671,7 @@
           // scrolls the page — position-based, so it works even if pinch
           // recognition struggles with lighting or hand angle.
           let edgeInfo = '';
-          if (!nowPinched) {
+          if (!nowPinched && !gameOpen) {
             const h = window.innerHeight;
             const zoneH = h * 0.13;
             if (sy < zoneH) {
@@ -1674,6 +1757,7 @@
             firstDetect = true;
             lastVideoTime = -1;
             showGuide();
+            window.__jarvis?.speak('Gesture interface online. At your service.');
             rafId = requestAnimationFrame(loop);
           } catch (err) {
             const denied = err && (err.name === 'NotAllowedError' || err.name === 'NotFoundError');
@@ -1706,7 +1790,12 @@
 
         palmBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          active ? stop() : start();
+          if (active) {
+            stop();
+            window.__jarvis?.speak('Gesture interface offline.');
+          } else {
+            start();
+          }
         });
         palmBtn.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -1718,6 +1807,488 @@
         // Battery saver: release the camera when the page is backgrounded
         document.addEventListener('visibilitychange', () => {
           if (document.hidden && active) stop();
+        });
+      })();
+    </script>
+
+    <!-- 11. J.A.R.V.I.S. VOICE + GESTURE MAGIC FX + ENGINEERING ARCADE -->
+    <script>
+      // ---------- J.A.R.V.I.S. VOICE ----------
+      (() => {
+        let enabled = localStorage.getItem('jarvis-voice') !== 'off';
+        function speak(text) {
+          if (!enabled || !('speechSynthesis' in window)) return;
+          try {
+            speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.rate = 1.04;
+            u.pitch = 0.8;
+            u.volume = 0.85;
+            const voices = speechSynthesis.getVoices();
+            const v = voices.find(x => /en-GB/i.test(x.lang) && /male|daniel|ryan|george/i.test(x.name))
+              || voices.find(x => /en-GB/i.test(x.lang))
+              || voices.find(x => /^en/i.test(x.lang));
+            if (v) u.voice = v;
+            speechSynthesis.speak(u);
+          } catch (e) { /* voice is a garnish — never let it break the page */ }
+        }
+        window.__jarvis = {
+          speak,
+          get enabled() { return enabled; },
+          set enabled(v) {
+            enabled = v;
+            localStorage.setItem('jarvis-voice', v ? 'on' : 'off');
+          }
+        };
+      })();
+
+      // ---------- GESTURE MAGIC FX (sparkle layer) ----------
+      (() => {
+        const canvas = document.getElementById('fx-canvas');
+        const ctx = canvas.getContext('2d');
+        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        let enabled = localStorage.getItem('jarvis-fx') !== 'off' && !reduced;
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+        const particles = [];
+        const MAX = 220;
+        let running = false;
+        let lastTrail = 0;
+
+        function resize() {
+          canvas.width = window.innerWidth * dpr;
+          canvas.height = window.innerHeight * dpr;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        const COLORS = ['0, 240, 255', '112, 0, 255', '255, 255, 255'];
+
+        function push(p) {
+          if (particles.length < MAX) particles.push(p);
+          if (!running) { running = true; requestAnimationFrame(tick); }
+        }
+
+        function spawnTrail(x, y) {
+          if (!enabled) return;
+          const now = performance.now();
+          if (now - lastTrail < 30) return; // cap emission rate
+          lastTrail = now;
+          for (let i = 0; i < 2; i++) {
+            push({
+              x, y,
+              vx: (Math.random() - 0.5) * 0.8,
+              vy: (Math.random() - 0.5) * 0.8 + 0.3,
+              life: 1,
+              decay: 0.03 + Math.random() * 0.03,
+              size: 1.2 + Math.random() * 2,
+              color: COLORS[(Math.random() * COLORS.length) | 0]
+            });
+          }
+        }
+
+        function spawnBurst(x, y) {
+          if (!enabled) return;
+          for (let i = 0; i < 26; i++) {
+            const a = (i / 26) * Math.PI * 2;
+            const sp = 2 + Math.random() * 4;
+            push({
+              x, y,
+              vx: Math.cos(a) * sp,
+              vy: Math.sin(a) * sp,
+              life: 1,
+              decay: 0.02 + Math.random() * 0.02,
+              size: 1.5 + Math.random() * 2.5,
+              color: COLORS[(Math.random() * COLORS.length) | 0]
+            });
+          }
+        }
+
+        function tick() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.02;
+            p.life -= p.decay;
+            if (p.life <= 0) { particles.splice(i, 1); continue; }
+            ctx.beginPath();
+            ctx.arc(p.x * dpr, p.y * dpr, p.size * p.life * dpr, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${p.color}, ${p.life * 0.85})`;
+            ctx.fill();
+          }
+          if (particles.length) {
+            requestAnimationFrame(tick);
+          } else {
+            running = false;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+          }
+        }
+
+        window.__fx = {
+          trail: spawnTrail,
+          burst: spawnBurst,
+          get enabled() { return enabled; },
+          set enabled(v) {
+            enabled = v && !reduced;
+            localStorage.setItem('jarvis-fx', v ? 'on' : 'off');
+          }
+        };
+
+        // A little magic on ordinary clicks too, while palm mode is active
+        window.addEventListener('click', (e) => {
+          if (document.body.classList.contains('palm-active')) {
+            spawnBurst(e.clientX, e.clientY);
+          }
+        });
+      })();
+
+      // ---------- ENGINEERING ARCADE ----------
+      (() => {
+        const modal = document.getElementById('arcade-modal');
+        const openBtn = document.getElementById('arcade-control');
+        const closeBtn = document.getElementById('arcade-close');
+        const menuEl = document.getElementById('arcade-menu');
+        const stageEl = document.getElementById('arcade-stage');
+        const overEl = document.getElementById('arcade-over');
+        const canvas = document.getElementById('arcade-canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('arcade-score');
+        const timeEl = document.getElementById('arcade-time');
+        const bestEl = document.getElementById('arcade-best');
+        const overScoreEl = document.getElementById('arcade-over-score');
+        const overBestEl = document.getElementById('arcade-over-best');
+        const voiceChip = document.getElementById('arcade-voice');
+        const fxChip = document.getElementById('arcade-fx');
+
+        const DIFF = {
+          easy:   { spawnMs: 950, fall: 2.0, bugs: 3, bugSpeed: 1.0 },
+          normal: { spawnMs: 650, fall: 2.8, bugs: 5, bugSpeed: 1.6 },
+          hard:   { spawnMs: 430, fall: 3.8, bugs: 7, bugSpeed: 2.3 }
+        };
+        const GAME_TIME = 45;
+        const CATCH_ITEMS = [
+          { e: '⚙️', v: 10 }, { e: '🔩', v: 5 }, { e: '⚡', v: 15 }, { e: '🧲', v: 12 }
+        ];
+
+        let game = 'catch';
+        let diff = 'normal';
+        let screen = 'menu'; // menu | playing | over
+        let rafId = null;
+        let items = [];
+        let bugs = [];
+        let sparks = [];
+        let popups = [];
+        let score = 0;
+        let combo = 0;
+        let timeLeft = GAME_TIME;
+        let lastSpawn = 0;
+        let lastTick = 0;
+        let shake = 0;
+        let trayX = 0;
+        let cursorX = 0, cursorY = 0;
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+
+        const bestKey = () => `arcade-best-${game}-${diff}`;
+        const getBest = () => parseInt(localStorage.getItem(bestKey()) || '0', 10);
+
+        function resizeCanvas() {
+          const r = canvas.getBoundingClientRect();
+          canvas.width = r.width * dpr;
+          canvas.height = r.height * dpr;
+        }
+        window.addEventListener('resize', () => { if (screen === 'playing') resizeCanvas(); });
+
+        // Cursor input: real mouse, touch, and the palm cursor's synthetic
+        // mousemove events all land here.
+        window.addEventListener('mousemove', (e) => { cursorX = e.clientX; cursorY = e.clientY; });
+        window.addEventListener('touchmove', (e) => {
+          if (screen === 'playing' && e.touches[0]) {
+            cursorX = e.touches[0].clientX;
+            cursorY = e.touches[0].clientY;
+            e.preventDefault();
+          }
+        }, { passive: false });
+
+        function toCanvasXY(clientX, clientY) {
+          const r = canvas.getBoundingClientRect();
+          return { x: (clientX - r.left), y: (clientY - r.top) };
+        }
+
+        function spawnSparks(x, y, color, n) {
+          for (let i = 0; i < (n || 12); i++) {
+            const a = Math.random() * Math.PI * 2;
+            const sp = 1 + Math.random() * 4;
+            sparks.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, color });
+          }
+        }
+
+        function addPopup(x, y, text, color) {
+          popups.push({ x, y, text, color, life: 1 });
+        }
+
+        // ----- CIRCUIT CATCH -----
+        function updateCatch(dt, w, h) {
+          const d = DIFF[diff];
+          const now = performance.now();
+          if (now - lastSpawn > d.spawnMs) {
+            lastSpawn = now;
+            const isBug = Math.random() < 0.28;
+            const it = isBug ? { e: '🐛', v: -20 } : CATCH_ITEMS[(Math.random() * CATCH_ITEMS.length) | 0];
+            items.push({ x: 30 + Math.random() * (w - 60), y: -30, e: it.e, v: it.v, vy: d.fall * (0.8 + Math.random() * 0.5) });
+          }
+
+          const target = toCanvasXY(cursorX, cursorY).x;
+          trayX += (Math.min(Math.max(target, 50), w - 50) - trayX) * 0.25;
+          const trayY = h - 46;
+          const trayW = Math.min(120, w * 0.22);
+
+          for (let i = items.length - 1; i >= 0; i--) {
+            const it = items[i];
+            it.y += it.vy * dt * 60;
+            if (it.y > trayY - 14 && it.y < trayY + 22 && Math.abs(it.x - trayX) < trayW / 2 + 14) {
+              score = Math.max(0, score + it.v);
+              if (it.v > 0) {
+                spawnSparks(it.x, it.y, '0,240,255', 14);
+                addPopup(it.x, it.y - 10, '+' + it.v, '#00f0ff');
+              } else {
+                spawnSparks(it.x, it.y, '255,84,112', 20);
+                addPopup(it.x, it.y - 10, it.v, '#ff5470');
+                shake = 10;
+                window.__jarvis?.speak('Bug detected.');
+              }
+              items.splice(i, 1);
+              continue;
+            }
+            if (it.y > h + 30) items.splice(i, 1);
+          }
+
+          // draw tray
+          ctx.save();
+          ctx.shadowColor = 'rgba(0,240,255,0.8)';
+          ctx.shadowBlur = 18 * dpr;
+          ctx.fillStyle = 'rgba(0,240,255,0.9)';
+          const tw = trayW * dpr, tx = trayX * dpr, ty = trayY * dpr;
+          ctx.beginPath();
+          ctx.roundRect(tx - tw / 2, ty, tw, 10 * dpr, 6 * dpr);
+          ctx.fill();
+          ctx.restore();
+
+          ctx.font = `${26 * dpr}px serif`;
+          ctx.textAlign = 'center';
+          items.forEach(it => ctx.fillText(it.e, it.x * dpr, it.y * dpr));
+        }
+
+        // ----- BUG ZAPPER -----
+        function ensureBugs(w, h) {
+          const d = DIFF[diff];
+          while (bugs.length < d.bugs) {
+            bugs.push({
+              x: Math.random() * w,
+              y: 40 + Math.random() * (h - 80),
+              a: Math.random() * Math.PI * 2,
+              turn: (Math.random() - 0.5) * 0.1,
+              phase: Math.random() * 10
+            });
+          }
+        }
+
+        function updateZap(dt, w, h) {
+          const d = DIFF[diff];
+          ensureBugs(w, h);
+          bugs.forEach(b => {
+            b.a += b.turn + Math.sin(performance.now() / 700 + b.phase) * 0.05;
+            b.x += Math.cos(b.a) * d.bugSpeed * dt * 60;
+            b.y += Math.sin(b.a) * d.bugSpeed * dt * 60;
+            if (b.x < 20 || b.x > w - 20) b.a = Math.PI - b.a;
+            if (b.y < 20 || b.y > h - 20) b.a = -b.a;
+            b.x = Math.min(Math.max(b.x, 20), w - 20);
+            b.y = Math.min(Math.max(b.y, 20), h - 20);
+          });
+
+          ctx.font = `${26 * dpr}px serif`;
+          ctx.textAlign = 'center';
+          bugs.forEach(b => ctx.fillText('🐛', b.x * dpr, b.y * dpr));
+
+          // crosshair at cursor
+          const c = toCanvasXY(cursorX, cursorY);
+          if (c.x > 0 && c.x < w && c.y > 0 && c.y < h) {
+            ctx.strokeStyle = 'rgba(0,240,255,0.75)';
+            ctx.lineWidth = 1.5 * dpr;
+            ctx.beginPath();
+            ctx.arc(c.x * dpr, c.y * dpr, 16 * dpr, 0, Math.PI * 2);
+            ctx.moveTo((c.x - 24) * dpr, c.y * dpr); ctx.lineTo((c.x - 10) * dpr, c.y * dpr);
+            ctx.moveTo((c.x + 10) * dpr, c.y * dpr); ctx.lineTo((c.x + 24) * dpr, c.y * dpr);
+            ctx.moveTo(c.x * dpr, (c.y - 24) * dpr); ctx.lineTo(c.x * dpr, (c.y - 10) * dpr);
+            ctx.moveTo(c.x * dpr, (c.y + 10) * dpr); ctx.lineTo(c.x * dpr, (c.y + 24) * dpr);
+            ctx.stroke();
+          }
+        }
+
+        function zapAt(clientX, clientY) {
+          const c = toCanvasXY(clientX, clientY);
+          let hit = -1;
+          let hitDist = 46;
+          bugs.forEach((b, i) => {
+            const d2 = Math.hypot(b.x - c.x, b.y - c.y);
+            if (d2 < hitDist) { hit = i; hitDist = d2; }
+          });
+          if (hit >= 0) {
+            const b = bugs[hit];
+            bugs.splice(hit, 1);
+            combo++;
+            const pts = 10 + (combo - 1) * 2;
+            score += pts;
+            spawnSparks(b.x, b.y, '112,0,255', 22);
+            addPopup(b.x, b.y - 12, `+${pts}${combo > 1 ? ' x' + combo : ''}`, '#a866ff');
+            window.__fx?.burst(clientX, clientY);
+          } else {
+            combo = 0;
+          }
+        }
+
+        canvas.addEventListener('click', (e) => {
+          if (screen === 'playing' && game === 'zap') zapAt(e.clientX, e.clientY);
+        });
+
+        // ----- SHARED LOOP -----
+        function loop(ts) {
+          if (screen !== 'playing') return;
+          const dt = Math.min((ts - lastTick) / 1000, 0.05) || 0.016;
+          lastTick = ts;
+
+          timeLeft -= dt;
+          if (timeLeft <= 0) { endGame(); return; }
+
+          const w = canvas.width / dpr, h = canvas.height / dpr;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          ctx.save();
+          if (shake > 0) {
+            shake -= dt * 40;
+            ctx.translate((Math.random() - 0.5) * shake * dpr, (Math.random() - 0.5) * shake * dpr);
+          }
+
+          if (game === 'catch') updateCatch(dt, w, h);
+          else updateZap(dt, w, h);
+
+          // sparks
+          for (let i = sparks.length - 1; i >= 0; i--) {
+            const p = sparks[i];
+            p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.life -= 0.03;
+            if (p.life <= 0) { sparks.splice(i, 1); continue; }
+            ctx.fillStyle = `rgba(${p.color},${p.life})`;
+            ctx.fillRect(p.x * dpr, p.y * dpr, 2.5 * dpr, 2.5 * dpr);
+          }
+          // score popups
+          ctx.font = `bold ${14 * dpr}px 'Space Grotesk', monospace`;
+          for (let i = popups.length - 1; i >= 0; i--) {
+            const p = popups[i];
+            p.y -= 0.8; p.life -= 0.02;
+            if (p.life <= 0) { popups.splice(i, 1); continue; }
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            ctx.fillText(p.text, p.x * dpr, p.y * dpr);
+            ctx.globalAlpha = 1;
+          }
+          ctx.restore();
+
+          scoreEl.textContent = 'SCORE ' + score;
+          timeEl.textContent = Math.ceil(timeLeft) + 's';
+          rafId = requestAnimationFrame(loop);
+        }
+
+        // ----- SCREEN MANAGEMENT -----
+        function show(el) {
+          menuEl.style.display = el === menuEl ? '' : 'none';
+          stageEl.style.display = el === stageEl ? '' : 'none';
+          overEl.style.display = el === overEl ? '' : 'none';
+        }
+
+        function startGame() {
+          screen = 'playing';
+          show(stageEl);
+          items = []; bugs = []; sparks = []; popups = [];
+          score = 0; combo = 0; timeLeft = GAME_TIME; shake = 0;
+          lastSpawn = 0; lastTick = performance.now();
+          resizeCanvas();
+          trayX = canvas.width / dpr / 2;
+          bestEl.textContent = 'BEST ' + getBest();
+          window.__jarvis?.speak(game === 'catch'
+            ? 'Circuit catch initialized. Components incoming.'
+            : 'Bug zapper armed. Eliminate the intruders.');
+          rafId = requestAnimationFrame(loop);
+        }
+
+        function endGame() {
+          screen = 'over';
+          cancelAnimationFrame(rafId);
+          const best = Math.max(getBest(), score);
+          localStorage.setItem(bestKey(), best);
+          overScoreEl.textContent = score;
+          overBestEl.textContent = 'BEST ' + best;
+          show(overEl);
+          window.__jarvis?.speak(`Session complete. ${score} points.`);
+        }
+
+        function openModal() {
+          modal.classList.add('open');
+          document.body.classList.add('game-open');
+          screen = 'menu';
+          show(menuEl);
+          window.__jarvis?.speak('Welcome to the engineering arcade.');
+        }
+
+        function closeModal() {
+          cancelAnimationFrame(rafId);
+          screen = 'menu';
+          modal.classList.remove('open');
+          document.body.classList.remove('game-open');
+        }
+
+        openBtn.addEventListener('click', openModal);
+        openBtn.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(); }
+        });
+        closeBtn.addEventListener('click', closeModal);
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && modal.classList.contains('open')) closeModal();
+        });
+
+        document.getElementById('arcade-start').addEventListener('click', startGame);
+        document.getElementById('arcade-replay').addEventListener('click', startGame);
+        document.getElementById('arcade-back').addEventListener('click', () => { screen = 'menu'; show(menuEl); });
+
+        // game select cards
+        document.querySelectorAll('.arcade-game-card').forEach(card => {
+          card.addEventListener('click', () => {
+            document.querySelectorAll('.arcade-game-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            game = card.dataset.game;
+          });
+        });
+
+        // difficulty chips
+        document.querySelectorAll('#arcade-difficulty .arcade-chip').forEach(chip => {
+          chip.addEventListener('click', () => {
+            document.querySelectorAll('#arcade-difficulty .arcade-chip').forEach(c => c.classList.remove('selected'));
+            chip.classList.add('selected');
+            diff = chip.dataset.diff;
+          });
+        });
+
+        // option chips
+        function syncChip(chip, on) { chip.classList.toggle('selected', on); }
+        syncChip(voiceChip, window.__jarvis.enabled);
+        syncChip(fxChip, window.__fx.enabled);
+        voiceChip.addEventListener('click', () => {
+          window.__jarvis.enabled = !window.__jarvis.enabled;
+          syncChip(voiceChip, window.__jarvis.enabled);
+          if (window.__jarvis.enabled) window.__jarvis.speak('Voice systems online.');
+        });
+        fxChip.addEventListener('click', () => {
+          window.__fx.enabled = !window.__fx.enabled;
+          syncChip(fxChip, window.__fx.enabled);
         });
       })();
     </script>
