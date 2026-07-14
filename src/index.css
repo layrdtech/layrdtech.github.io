@@ -3015,6 +3015,16 @@ body.palm-grabbing .custom-cursor-ring {
   transform: translate(-50%, -50%) scale(1.4);
 }
 
+body.palm-holding .custom-cursor-core {
+  background-color: #ffd23c;
+  box-shadow: 0 0 16px rgba(255, 210, 60, 0.85);
+}
+
+body.palm-holding .custom-cursor-ring {
+  border: 1px solid rgba(255, 210, 60, 0.75);
+  animation: none;
+}
+
 /* Mobile layout: sit above the audio button, compact preview panel */
 @media (max-width: 768px) {
   .palm-control-btn {
@@ -3036,6 +3046,18 @@ body.palm-grabbing .custom-cursor-ring {
 
   .palm-hints {
     font-size: 0.52rem;
+  }
+
+  /* The glow spheres are position:absolute and their float animations
+     translate them past the right edge, which expands the mobile layout
+     viewport (~430-490px), breaks every fixed overlay, and causes
+     horizontal scroll. Cap their size and freeze the drift on phones —
+     at 70px blur the motion is imperceptible anyway. */
+  .ambient-glow-sphere {
+    width: 200px !important;
+    height: 200px !important;
+    filter: blur(60px);
+    animation: none !important;
   }
 
   /* Palm mode drives the cursor on touch devices too — make it prominent */

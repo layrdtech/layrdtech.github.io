@@ -1332,6 +1332,7 @@
         <span>✋ MOVE — cursor</span>
         <span>🤏 PINCH — click</span>
         <span>🤏 PINCH + drag — scroll</span>
+        <span>🤏 PINCH + stay still — hold / drag</span>
         <span>⬆⬇ HOLD at screen edge — scroll</span>
       </div>
     </div>
@@ -1350,12 +1351,12 @@
           <div class="palm-guide-card">
             <div class="palm-guide-emoji">🤏</div>
             <div class="palm-guide-name">PINCH</div>
-            <div class="palm-guide-desc">Tap thumb + index finger together, then release, to click</div>
+            <div class="palm-guide-desc">Quick pinch + release = click • keep still while pinched = hold &amp; drag</div>
           </div>
           <div class="palm-guide-card">
             <div class="palm-guide-emoji">🤏</div>
             <div class="palm-guide-name">PINCH + DRAG</div>
-            <div class="palm-guide-desc">Hold the pinch and move up / down to scroll</div>
+            <div class="palm-guide-desc">Pinch then immediately move up / down to scroll</div>
           </div>
           <div class="palm-guide-card">
             <div class="palm-guide-emoji">⬆⬇</div>
@@ -1616,10 +1617,22 @@
         }
 
         function emitClick(x, y) {
-          const el = document.elementFromPoint(x, y);
+          // Full sequence like a real browser click — some UI code listens
+          // to mousedown/mouseup rather than click.
+          emitMouse('mousedown', x, y, 1);
+          emitMouse('mouseup', x, y, 0);
+          emitMouse('click', x, y, 0);
+        }
+
+        function emitMouse(type, x, y, buttons) {
+          const el = document.elementFromPoint(
+            Math.min(Math.max(x, 1), window.innerWidth - 2),
+            Math.min(Math.max(y, 1), window.innerHeight - 2)
+          );
           if (!el) return;
-          el.dispatchEvent(new MouseEvent('click', {
-            bubbles: true, cancelable: true, clientX: x, clientY: y, view: window
+          el.dispatchEvent(new MouseEvent(type, {
+            bubbles: true, cancelable: true, clientX: x, clientY: y,
+            view: window, button: 0, buttons: buttons || 0
           }));
         }
 
@@ -1665,16 +1678,34 @@
           const nowPinched = pinched ? pinch < 0.8 : pinch < 0.5;
 
           if (nowPinched && !pinched) {
-            pinchStart = { x: sx, y: sy };
+            pinchStart = { x: sx, y: sy, t: now };
             pinchMode = 'pending';
             document.body.classList.add('palm-pinching');
           } else if (nowPinched && pinched) {
-            if (pinchMode === 'pending' && !gameOpen &&
-                Math.hypot(sx - pinchStart.x, sy - pinchStart.y) > 18) {
-              pinchMode = 'scroll';
-              scrollAnchorY = sy;
-              document.body.classList.add('palm-grabbing');
-              showToast('🤏 GRAB — <b>drag up or down</b> to scroll', 2000);
+            if (pinchMode === 'pending') {
+              const age = now - pinchStart.t;
+              const moved = Math.hypot(sx - pinchStart.x, sy - pinchStart.y);
+              if (age < 160) {
+                // Grace period: closing the fingers shifts the tracked hand a
+                // little, so keep re-anchoring — the pinch motion itself must
+                // never read as a drag.
+                pinchStart.x = sx;
+                pinchStart.y = sy;
+              } else if (moved > 40 && !gameOpen) {
+                pinchMode = 'scroll';
+                scrollAnchorY = sy;
+                document.body.classList.add('palm-grabbing');
+                showToast('🤏 GRAB — <b>drag up or down</b> to scroll', 2000);
+              } else if (age > 550 && moved < 28) {
+                // CLICK & HOLD: stationary pinch becomes a press —
+                // move to drag, release to drop
+                pinchMode = 'hold';
+                emitMouse('mousedown', pinchStart.x, pinchStart.y, 1);
+                document.body.classList.add('palm-holding');
+                setStatus('HOLDING 🤏', 'active');
+                showToast('🤏 <b>HOLD</b> engaged — move to drag, release to drop', 2000);
+                window.__fx?.burst(pinchStart.x, pinchStart.y);
+              }
             }
             if (pinchMode === 'scroll') {
               // Grab-the-page metaphor: content follows the pinched hand
@@ -1684,6 +1715,9 @@
                 scrollAnchorY = sy;
               }
               setStatus('SCROLLING 🤏', 'active');
+            } else if (pinchMode === 'hold') {
+              emitMouse('mousemove', sx, sy, 1);
+              setStatus('DRAGGING 🤏', 'active');
             }
           } else if (!nowPinched && pinched) {
             if (pinchMode === 'pending') {
@@ -1691,9 +1725,12 @@
               setStatus('CLICK 🤏', 'active');
               showToast('🤏 <b>CLICK</b> registered', 1200);
               window.__fx?.burst(pinchStart.x, pinchStart.y);
+            } else if (pinchMode === 'hold') {
+              emitMouse('mouseup', sx, sy, 0);
+              setStatus('RELEASED 🤏', 'active');
             }
             pinchMode = null;
-            document.body.classList.remove('palm-pinching', 'palm-grabbing');
+            document.body.classList.remove('palm-pinching', 'palm-grabbing', 'palm-holding');
           } else {
             setStatus('TRACKING ✋', 'active');
           }
@@ -1721,7 +1758,7 @@
 
           // Live readout of what the tracker sees, for tuning + trust
           const gesture = nowPinched
-            ? (pinchMode === 'scroll' ? 'PINCH-DRAG' : 'PINCH')
+            ? (pinchMode === 'scroll' ? 'PINCH-DRAG' : pinchMode === 'hold' ? 'PINCH-HOLD' : 'PINCH')
             : 'OPEN PALM';
           palmDebug.textContent = gesture + ' • grip ' + pinch.toFixed(2) + edgeInfo;
         }
@@ -1739,6 +1776,12 @@
               } else {
                 hasFix = false;
                 pinchSm = null;
+                if (pinchMode === 'hold') emitMouse('mouseup', sx, sy, 0);
+                if (pinched) {
+                  pinched = false;
+                  pinchMode = null;
+                  document.body.classList.remove('palm-pinching', 'palm-grabbing', 'palm-holding');
+                }
                 setStatus('SHOW YOUR PALM', 'info');
                 palmDebug.textContent = 'NO HAND DETECTED';
                 if (!firstDetect && !palmToast.classList.contains('visible')) {
@@ -1810,6 +1853,7 @@
             stream = null;
           }
           palmVideo.srcObject = null;
+          if (pinchMode === 'hold') emitMouse('mouseup', sx, sy, 0);
           pinched = false;
           pinchMode = null;
           pinchStart = null;
