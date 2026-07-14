@@ -150,6 +150,9 @@ p {
   pointer-events: none;
   z-index: 2;
   mix-blend-mode: screen;
+  /* keep the blurred sphere cached on its own layer so the float/parallax
+     transforms don't re-rasterize the 100px blur every frame */
+  will-change: transform;
 }
 
 .sphere-cyan {
@@ -570,15 +573,15 @@ p {
 .bg-ambient-grid {
   position: fixed;
   inset: 0;
-  background-image: 
+  background-image:
     linear-gradient(rgba(255, 255, 255, 0.005) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.005) 1px, transparent 1px);
   background-size: 120px 120px;
   z-index: 4;
   pointer-events: none;
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  transition: transform 0.1s ease-out;
+  /* no backdrop-filter here: a full-viewport blur over a playing video
+     re-blurs every frame and was the site's single biggest GPU cost */
+  will-change: transform;
 }
 
 /* NAVIGATION */
